@@ -1,5 +1,5 @@
 /*
- * A sample C-program for Sensapex micromanipulator SDK (umsdk)
+ * A sample C-program for Sensapex micromanipulator SDK (umpsdk)
  *
  * Copyright (c) 2016-2020, Sensapex Oy
  * All rights reserved.
@@ -22,13 +22,13 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/timeb.h>
+#include <stdint.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.122"
+#define VERSION_STR   "v0.121"
 #define COPYRIGHT "Copyright (c) Sensapex. All rights reserved"
 
 #define DEV     1
-#define UNDEF  (-1)
 #define UPDATE  200
 
 typedef struct params_s
@@ -40,21 +40,23 @@ typedef struct params_s
 
 void usage(char **argv)
 {
-    fprintf(stderr,"usage: %s [opts]\n",argv[0]);
+    fprintf(stderr,"usage: %s [opts]\n", argv[0]);
     fprintf(stderr,"Generic options\n");
     fprintf(stderr,"-d\tdev (def: %d)\n", DEV);
     fprintf(stderr,"-v\tverbose\n");
     fprintf(stderr,"-a\taddress (def: %s)\n", LIBUM_DEF_BCAST_ADDRESS);
+    fprintf(stderr,"-u\tposition and status update period (def: %d ms)\n", UPDATE);
     fprintf(stderr,"Position change\n");
-    fprintf(stderr,"-x\trelative target (um, decimal value accepted)\n");
-    fprintf(stderr,"-y\trelative target\n");
-    fprintf(stderr,"-z\trelative target\n");
-    fprintf(stderr,"-d\trelative target\n");
-    fprintf(stderr,"-X\tabs target (um, decimal value accepted)\n");
-    fprintf(stderr,"-Y\tabs target\n");
-    fprintf(stderr,"-Z\tabs target\n");
-    fprintf(stderr,"-D\tabs target\n");
-    fprintf(stderr,"-n\tcount\tloop current and target positions\n");
+    fprintf(stderr,"-x\trelative target (um, decimal value accepted, negative value for backward)\n");
+    fprintf(stderr,"-y\trelative target \n");
+    fprintf(stderr,"-z\trelative target \n");
+    fprintf(stderr,"-w\trelative target for the 4th axis\n");
+    fprintf(stderr,"-X\tabs target (um, decimal value accepted\n");
+    fprintf(stderr,"-Y\tabs target \n");
+    fprintf(stderr,"-Z\tabs target \n");
+    fprintf(stderr,"-W\tabs target for the 4th axis\n");
+    fprintf(stderr,"-D\tabs target for the 4th axis, alias for above\n");
+    fprintf(stderr,"-n\tcount\tloop between current and target positions or take multiple relative steps into same direction\n");
     exit(1);
 }
 
@@ -64,10 +66,10 @@ void parse_args(int argc, char *argv[], params_struct *params)
     int i, v;
     float f;
     memset(params, 0, sizeof(params_struct));
-    params->X = UNDEF;
-    params->Y = UNDEF;
-    params->Z = UNDEF;
-    params->D = UNDEF;
+    params->X = LIBUM_ARG_UNDEF;
+    params->Y = LIBUM_ARG_UNDEF;
+    params->Z = LIBUM_ARG_UNDEF;
+    params->D = LIBUM_ARG_UNDEF;
     params->dev = DEV;
     params->update = UPDATE;
     params->address = LIBUM_DEF_BCAST_ADDRESS;
@@ -77,7 +79,7 @@ void parse_args(int argc, char *argv[], params_struct *params)
         {
             switch(argv[i][1])
             {
-            case 'h':
+            case 'h': 
                 usage(argv);
                 break;
             case 'v':
@@ -152,6 +154,7 @@ void parse_args(int argc, char *argv[], params_struct *params)
                 else
                     usage(argv);
                 break;
+            case 'D':
             case 'W':
                 if(i < argc-1 && sscanf(argv[++i],"%f",&f) == 1 && f >= 0)
                     params->D = f;
@@ -176,15 +179,14 @@ void parse_args(int argc, char *argv[], params_struct *params)
 
 int main(int argc, char *argv[])
 {
-    int ret, loop = 0;
-    float target_x = 0, target_y = 0, target_z = 0, target_d = 0;
-    float home_x = 0, home_y = 0, home_z = 0, home_d = 0;
-    um_state *handle;
+    um_state *handle = NULL;
+    int ret, status, loop = 0;
+    float home_x = 0.0, home_y = 0.0, home_z = 0.0, home_d = 0.0;
     params_struct params;
 
     parse_args(argc, argv, &params);
 
-    if((handle = um_open(params.address, 100)) == NULL)
+    if((handle = um_open(params.address, LIBUM_DEF_TIMEOUT)) == NULL)
     {
         // Feeding NULL handle is intentional, it obtains the
         // last OS error which prevented the port to be opened
@@ -199,61 +201,48 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    printf("Axis count %d\n", um_get_axis_count(handle, params.dev));
-
-    /*
-     * These functions providing the axis position as return value are convenient e.g. for mathlab usage.
-     * For C code use ump_get_positions(handle, dev, time_limit, &x, &y, &z, &w, &elapsed)
-     *
-     * First read the position from the manipulator (or check that cache inside SDK contains new and valid values)
-     */
-
-    if(um_read_positions(handle, params.dev, params.update) < 0)
-    {
-        fprintf(stderr, "read positions failed - %s\n", um_last_errorstr(handle));
-        um_close(handle);
-        exit(3);
-    }
-    // next obtain the position values
-    home_x = um_get_position(handle, params.dev, 'x');
-    home_y = um_get_position(handle, params.dev, 'y');
-    home_z = um_get_position(handle, params.dev, 'z');
-    home_d = um_get_position(handle, params.dev, 'd');
-
-    printf("Current position: %3.2f %3.2f %3.2f %3.2f\n", home_x, home_y, home_z, home_d);
-
-    // Calculate target positions, relative
-    if(params.x)
-        target_x = home_x + params.x;
-    if(params.y)
-        target_y = home_y + params.y;
-    if(params.z)
-        target_z = home_z + params.z;
-    if(params.d)
-        target_d = home_d + params.d;
-    // or absolutely
-    if(params.X != UNDEF)
-        target_x = params.X;
-    if(params.Y != UNDEF)
-        target_y = params.Y;
-    if(params.Z != UNDEF)
-        target_z = params.Z;
-    if(params.D != UNDEF)
-        target_d = params.D;
+    if(um_get_positions(handle, params.dev, params.update, &home_x, &home_y, &home_z, &home_d, NULL) < 0)
+        fprintf(stderr, "Get positions failed - %s\n", um_last_errorstr(handle));
+    else
+        printf("Current position: %3.2f %3.2f %3.2f %3.2f\n", home_x, home_y, home_z, home_d);
 
     do
     {
         float x, y, z, d;
-        if(loop&1)
-            x = home_x, y = home_y, z = home_z, d = home_d;
+
+        if(params.X != LIBUM_ARG_UNDEF)
+            x = (loop&1)?home_x:params.X;
+        else if(params.x)
+            x = home_x + (loop+1)*params.x;
         else
-            x = target_x, y = target_y, z = target_z, d = target_d;
+            x = LIBUM_ARG_UNDEF;
+
+        if(params.Y != LIBUM_ARG_UNDEF)
+            y = (loop&1)?home_y:params.Y;
+        else if(params.y)
+            y = home_y + (loop+1)*params.y;
+        else
+            y = LIBUM_ARG_UNDEF;
+
+        if(params.Z != LIBUM_ARG_UNDEF)
+            z = (loop&1)?home_z:params.Z;
+        else if(params.z)
+            z = home_z + (loop+1)*params.z;
+        else
+            z = LIBUM_ARG_UNDEF;
+
+        if(params.D != LIBUM_ARG_UNDEF)
+            d = (loop&1)?home_d:params.D;
+        else if(params.d)
+            d = home_d + (loop+1)*params.d;
+        else
+            d = LIBUM_ARG_UNDEF;
+
         if(params.loop)
             printf("Target position: %3.2f %3.2f %3.2f %3.2f (%d/%d)\n", x, y, z, d, loop+1, params.loop);
         else
             printf("Target position: %3.2f %3.2f %3.2f %3.2f\n", x, y, z, d);
 
-        // Movement mode and acceleration using device default values 0
         if((ret = um_goto_position(handle, params.dev, x, y, z, d, params.speed, 0, 0)) < 0)
         {
             fprintf(stderr, "Goto position failed - %s\n", um_last_errorstr(handle));
@@ -261,17 +250,21 @@ int main(int argc, char *argv[])
         }
         if(!params.loop && !params.verbose)
             break;
-        while(um_get_drive_status(handle, params.dev) == LIBUM_POS_DRIVE_BUSY)
+        do
         {
+            um_receive(handle, params.update);
+            status = um_get_drive_status(handle, params.dev);
             if(params.verbose)
             {
-                if(um_get_positions(handle, params.dev, params.update, &x, &y, &z, &d, NULL) < 0)
+                if(status < 0)
+                    fprintf(stderr, "Status read failed - %s\n", um_last_errorstr(handle));
+                else if(um_get_positions(handle, params.dev, params.update, &x, &y, &z, &d, NULL) < 0)
                     fprintf(stderr, "Get positions failed - %s\n", um_last_errorstr(handle));
                 else
-                    printf("%3.2f\t%3.2f\t%3.2f\t%3.2f\n", x, y, z, d);
+                    printf("%3.2f %3.2f %3.2f %3.2f status %02X\n", x, y, z, d, status);
             }
-            um_receive(handle, params.update);
-       }
+        }
+        while(status == LIBUM_POS_DRIVE_BUSY);
 	} while(++loop < params.loop);
     um_close(handle);
     exit(!ret);

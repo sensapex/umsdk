@@ -406,18 +406,6 @@ LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
                                              const int speedZ, const int speedW,
                                              const int mode, const int max_acc);
 /**
- * @brief Goto to a virtual axis position - this feature is supported by uMp, not by uMs
- *
- * @param   hndl        Pointer to session handle
- * @param   dev         Device ID
- * @param   x_position  Target virtual axis X position (nm).
- * @param   speed       movement speed in um/s
- * @return  Negative value if an error occured. Zero or positive value otherwise
- */
-
-LIBUM_SHARED_EXPORT int ump_goto_virtual_axis_position(um_state *hndl, const int dev,
-                                                       const float x_position, const int speed);
-/**
  * @brief Stop device
  *
  * @param   hndl        Pointer to session handle
@@ -435,7 +423,7 @@ LIBUM_SHARED_EXPORT int um_stop(um_state * hndl, const int dev);
  * into the cache
  *
  * @param   hndl       Pointer to session handle
- * @para    timelimit  delay in milliseconds
+ * @para    timelimit  delay in milliseconds, zero for process queued packages with zero wait
  * @return  Positive value indicates the count of received messages.
  *          Zero if no related messages was received. Negative value indicates an error.
  */

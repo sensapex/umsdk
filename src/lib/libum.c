@@ -35,7 +35,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v0.913"
+#define LIBUM_VERSION_STR    "v0.915"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -298,10 +298,11 @@ static bool udp_set_address(IPADDR *addr, const char *s)
     // return inet_aton(s, &addr->sin_addr) > 0;
 }
 
-static int udp_recv(um_state *hndl, unsigned char *response, const size_t response_size, IPADDR *from)
+static int udp_recv(um_state *hndl, unsigned char *response, const size_t response_size,
+                    IPADDR *from, const int timeout)
 {
     int ret;
-    if((ret = udp_select(hndl, hndl->timeout)) < 0)
+    if((ret = udp_select(hndl, timeout)) < 0)
     {
         hndl->last_os_errno = getLastError();
         sprintf(hndl->errorstr_buffer, "select failed - %s", strerror(hndl->last_error));
@@ -771,11 +772,11 @@ int um_goto_position(um_state *hndl, const int dev, const float x, const float y
         return set_last_error(hndl, LIBUM_INVALID_DEV);
     if(is_invalid_pos(x) || is_invalid_pos(y) || is_invalid_pos(z) || is_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
-    args[argc++] = um2nm(x);
-    args[argc++] = um2nm(y);
-    args[argc++] = um2nm(z);
+    args[argc++] = (x==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(x);
+    args[argc++] = (y==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(y);
+    args[argc++] = (z==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(z);
     if(d != SMCP1_ARG_UNDEF || speed || mode)
-        args[argc++] = um2nm(d);
+        args[argc++] = (d==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(d);
     if(speed || mode || max_acc)
         args[argc++] = speed;
     if(mode || max_acc)
@@ -813,10 +814,10 @@ int um_goto_position_ext(um_state *hndl, const int dev,
         return set_last_error(hndl, LIBUM_INVALID_DEV);
     if(is_invalid_pos(x) || is_invalid_pos(y) || is_invalid_pos(z) || is_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
-    args[argc++] = um2nm(x);
-    args[argc++] = um2nm(y);
-    args[argc++] = um2nm(z);
-    args[argc++] = um2nm(d);
+    args[argc++] = (x==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(x);
+    args[argc++] = (y==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(y);
+    args[argc++] = (z==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(z);
+    args[argc++] = (d==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(d);
     // backward compatibility trick for uMs or uMp not supporting second sub block,
     // but just one speed argument shared by all axis
     args[argc++] = get_max_speed(speedX, speedY, speedZ, speedD);
@@ -837,24 +838,6 @@ int um_goto_position_ext(um_state *hndl, const int dev,
     um_set_drive_status(hndl, dev, ret>=0?LIBUM_POS_DRIVE_BUSY:LIBUM_POS_DRIVE_FAILED);
     return ret;
 }
-
-int ump_goto_virtual_axis_position(um_state *hndl, const int dev, const float x_position, const int speed) {
-    int ret, args[4], argc = 0;
-    if(!hndl)
-        return set_last_error(hndl, LIBUM_NOT_OPEN);
-    if(is_invalid_dev(dev))
-        return set_last_error(hndl, LIBUM_INVALID_DEV);
-    if(is_invalid_pos(x_position) )
-        return set_last_error(hndl, LIBUM_INVALID_ARG);
-
-    args[argc++] = um2nm(x_position);
-    args[argc++] = speed;
-
-    ret = um_cmd(hndl, dev, SMCP1_CMD_GOTO_VIRTUAL_AXIS_POSITION, argc, args);
-    um_set_drive_status(hndl, dev, ret>=0?LIBUM_POS_DRIVE_BUSY:LIBUM_POS_DRIVE_FAILED);
-    return ret;
-}
-
 
 float um_get_speed(um_state *hndl, const int dev, const char axis)
 {
@@ -1018,7 +1001,7 @@ int um_get_soft_start_mode(um_state *hndl, const int dev)
 #define UMP_RECEIVE_ACK_GOT  1
 #define UMP_RECEIVE_RESP_GOT 2
 
-int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_data_ptr)
+int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_data_ptr, const int timeout)
 {
     IPADDR from;
     int receiver_id, sender_id, message_id, type, sub_blocks, data_size = 0, data_type = SMCP1_DATA_VOID, options, status;
@@ -1043,7 +1026,7 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
 
     memset(msg, 0, sizeof(um_message));
 
-    if((ret = udp_recv(hndl, (unsigned char *)msg, sizeof(um_message), &from)) < 1)
+    if((ret = udp_recv(hndl, (unsigned char *)msg, sizeof(um_message), &from, timeout)) < 1)
     {
         if(!ret)
             return set_last_error(hndl, LIBUM_TIMEOUT);
@@ -1244,7 +1227,7 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
 }
 
 int um_recv(um_state *hndl, um_message *msg)
-{   return um_recv_ext(hndl, msg, NULL, NULL); }
+{   return um_recv_ext(hndl, msg, NULL, NULL, hndl->timeout); }
 
 int um_receive(um_state *hndl, const int timelimit)
 {
@@ -1253,13 +1236,24 @@ int um_receive(um_state *hndl, const int timelimit)
     int ret, count = 0;
     um_message resp;
     unsigned long long start = um_get_timestamp_ms();
-    do
+    if(!timelimit)
     {
-        if((ret = um_recv(hndl, &resp)) >= 0)
-            count++;
-        else if(ret < 0 && ret != LIBUM_TIMEOUT && ret != LIBUM_INVALID_DEV)
-            return ret;
-    } while((int)get_elapsed(start) < timelimit);
+        do
+        {
+            if((ret = um_recv_ext(hndl, &resp, NULL, NULL, 0)) >= 0)
+                count++;
+        } while(ret >= 0);
+    }
+    else
+    {
+        do
+        {
+            if((ret = um_recv(hndl, &resp)) >= 0)
+                count++;
+            else if(ret < 0 && ret != LIBUM_TIMEOUT && ret != LIBUM_INVALID_DEV)
+                return ret;
+        } while((int)get_elapsed(start) < timelimit);
+    }
     return count;
 }
 
