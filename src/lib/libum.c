@@ -1,12 +1,13 @@
 /*
- * A software development kit for Sensapex 2015 series Micromanipulator
+ * A software development kit for Sensapex 2015 series Micromanipulators,
+ * Microscope stage and Pressure controller
  *
  * Copyright (c) 2015-2020, Sensapex Oy
  * All rights reserved.
  *
- * This file is part of 2015 series Sensapex Micromanipulator SDK
+ * This file is part of 2015 series Sensapex uMx device SDK
  *
- * The Sensapex micromanipulator SDK is free software: you can redistribute
+ * The Sensapex uMx SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
@@ -35,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v0.915"
+#define LIBUM_VERSION_STR    "v0.916"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -1503,16 +1504,19 @@ int um_set_ext_feature(um_state *hndl, const int dev, const int feature_id, cons
     return um_cmd(hndl, dev, SMCP1_SET_EXT_FEATURE, 2, args);
 }
 
-int ump_cmd_get_axis_angle(um_state *hndl, const int dev, const int actuator, const int layer) {
-    int args[2], argc = 0;
-    int resp[2];
-    if(!hndl)
-        return set_last_error(hndl, LIBUM_NOT_OPEN);
-    args[argc++] = actuator;
-    args[argc++] = layer;
-    if(um_send_msg(hndl, dev, SMCP1_CMD_GET_AXIS_ANGLE, argc, args, 0, NULL, 1, &resp[0]) < 0)
-        return 0;
-    return resp[0];
+int ump_get_axis_angle(um_state *hndl, const int dev, float *value)
+{
+    int ret, args[2];
+    int resp, axis_count;
+    if((axis_count = um_get_axis_count(hndl, dev)) < 0)
+        return axis_count;
+    args[0] = (axis_count == 4)?3:0;
+    args[1] = 1;
+    if((ret = um_send_msg(hndl, dev, SMCP1_CMD_GET_AXIS_ANGLE, 2, args, 0, NULL, 1, &resp)) < 0)
+        return ret;
+    if(value)
+        *value = (float)resp/10.0;
+    return resp;
 }
 
 static int ump_resolve_cls_mode(const float step_x, const float step_y, const float step_z, const float step_w,

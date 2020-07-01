@@ -306,15 +306,6 @@ LIBUM_SHARED_EXPORT int um_set_log_func(um_state *hndl, const int verbose_level,
 LIBUM_SHARED_EXPORT const char *um_get_version();
 
 /**
- * @brief Get the uMp or uMs axis count
- *
- * @param       hndl    Pointer to session handle
- * @return  Negative value if an error occured. Axis count otherwise
- */
-
-LIBUM_SHARED_EXPORT int um_get_axis_count(um_state *hndl, const int dev);
-
-/**
  * @brief Ping device
  *
  * @param   hndl    Pointer to session handle
@@ -624,30 +615,29 @@ LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @param   feature_id Feature id
+ * @param   id      Feature id
  * @return  Negative value if an error occured. 0 if feature disabled, 1 if enabled
  */
 
-LIBUM_SHARED_EXPORT int um_get_feature(um_state *hndl, const int dev, const int feature_id);
-LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const int feature_id);
+LIBUM_SHARED_EXPORT int um_get_feature(um_state *hndl, const int dev, const int id);
+LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const int id);
 
 /**
- * @brief Enable or disable a manipulator feature
+ * @brief Enable or disable a device feature
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
- * @param   feature_id  Feature id
+ * @param   id        Feature id
  * @param   value     0 to disable and 1 to enable feature
  * @return  Negative value if an error occured. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_set_feature(um_state *hndl, const int dev,
-                                         const int feature_id, const int value);
+                                         const int id, const int value);
 LIBUM_SHARED_EXPORT int um_set_ext_feature(um_state *hndl, const int dev,
-                                         const int feature_id, const int value);
-
+                                         const int id, const int value);
 /**
- * @brief Get state of a manipulator feature & feature mask
+ * @brief Get state of device feature & feature mask
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
@@ -658,8 +648,19 @@ LIBUM_SHARED_EXPORT int um_set_ext_feature(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int um_get_feature_functionality(um_state *hndl, const int dev, const int feature_id);
 
 /**
+ * @brief Get axis angle, supported by manipulators, not by uMs
+ * @param hndl       Pointer to session handle
+ * @param dev        Device id
+ * @param[out] value Pointer to an allocated variable, angle in degrees with 0.1 degree resolution.
+ *                   May be NULL if integer return value with 1 degree resolution is enough
+ * @return Negative value if an error occured, angle in degrees othervice
+ */
+
+LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float *value);
+
+/**
  *
- * @brief uMc specific commands
+ * @brief Pressure controller (uMc) specific commands
  */
 
 /**

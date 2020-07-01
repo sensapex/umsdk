@@ -79,7 +79,7 @@ void parse_args(int argc, char *argv[], params_struct *params)
         {
             switch(argv[i][1])
             {
-            case 'h': 
+            case 'h':
                 usage(argv);
                 break;
             case 'v':
@@ -201,6 +201,12 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
+    float angle;
+    if(ump_get_axis_angle(handle, params.dev, &angle) < 0)
+        fprintf(stderr, "Get axis angle failed - %s\n", um_last_errorstr(handle));
+    else
+        printf("Axis angle %1.1f degree\n", angle);
+
     if(um_get_positions(handle, params.dev, params.update, &home_x, &home_y, &home_z, &home_d, NULL) < 0)
         fprintf(stderr, "Get positions failed - %s\n", um_last_errorstr(handle));
     else
@@ -265,7 +271,7 @@ int main(int argc, char *argv[])
             }
         }
         while(status == LIBUM_POS_DRIVE_BUSY);
-	} while(++loop < params.loop);
+    } while(++loop < params.loop);
     um_close(handle);
     exit(!ret);
 }
