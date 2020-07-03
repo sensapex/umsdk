@@ -449,35 +449,34 @@ typedef enum
 
 } smcp1_cmd;
 
-/**
-  * Parameters, these were register values in legacy models
-  *
-  */
-
-typedef enum {
+typedef enum 
+{
     SMCP1_PARAM_MEM_SPEED               = 2,
     SMCP1_PARAM_DEV_ID                  = 3,
     SMCP1_PARAM_VIRTUALX_ANGLE          = 4, // angle value degrees*10
     // Read only range via normal SDK
-    SMCP1_PARAM_HW_ID                       = 0x101,
-    SMCP1_PARAM_SN                          = 0x102,
-    SMCP1_PARAM_EOW                         = 0x103,
-    SMCP1_PARAM_VIRTUALX_DETECTED_ANGLE     = 0x104,
-    SMCP1_PARAM_AXIS_COUNT                  = 0x105,
+    SMCP1_PARAM_HW_ID                   = 0x101,
+    SMCP1_PARAM_SN                      = 0x102,
+    SMCP1_PARAM_EOW                     = 0x103,
+    SMCP1_PARAM_VIRTUALX_DETECTED_ANGLE = 0x104,
+    SMCP1_PARAM_AXIS_COUNT              = 0x105,
 } smcp1_params;
 
-typedef enum {
-    SMCP10_FEAT_VIRTUAL_AXIS            = 0x0,  // Bit 0
-    SMCP10_FEAT_INVERT_VIRTUAL_AXIS     = 0x1,  // Bit 1
-    SMCP10_FEAT_TRANSITION_LIMITS       = 0x2,  // Bit 2
-    SMCP10_FEAT_W_AS_VIRTUAL_AXIS       = 0x3,  // Bit 3
-    SMCP10_FEAT_PREVENT_MOVEMENT        = 0x4   // Bit 4
+typedef enum 
+{
+    SMCP10_FEAT_VIRTUAL_AXIS            = 0,
+    SMCP10_FEAT_INVERT_VIRTUAL_AXIS     = 1,
+    SMCP10_FEAT_TRANSITION_LIMITS       = 2,
+    SMCP10_FEAT_W_AS_VIRTUAL_AXIS       = 3,
+    SMCP10_FEAT_PREVENT_MOVEMENT        = 4,
+    
+    SMCP10_FEAT_DISABLE_LEDS            = 16
 } smcp1_features;
 
 typedef enum
 {
-    SMCP10_EXT_FEAT_CUST_LOW_SPEED      = 0x20, // bit 32
-    SMCP10_EXT_FEAT_SOFT_START          = 0x21  // Bit 33
+    SMCP10_EXT_FEAT_CUST_LOW_SPEED      = 32,
+    SMCP10_EXT_FEAT_SOFT_START          = 33 
 } smcp1_ext_features;
 
 typedef enum
