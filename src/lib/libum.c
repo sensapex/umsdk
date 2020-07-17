@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v0.916"
+#define LIBUM_VERSION_STR    "v0.917"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -57,7 +57,7 @@ HRESULT __stdcall DllUnregisterServer(void) { return S_OK; }
 #endif
 
 #ifndef LIBUM_SHARED_DO_NOT_EXPORT
-const char rcsid[] = "$Id: Sensapex 2015 series micromanipulator interface " LIBUM_VERSION_STR " " __DATE__ " " LIBUM_COPYRIGHT " Exp $";
+const char rcsid[] = "$Id: Sensapex uMx device SDK " LIBUM_VERSION_STR " " __DATE__ " " LIBUM_COPYRIGHT " Exp $";
 #endif
 
 // ftime has been depricated and replaced with gettimeofday
@@ -567,13 +567,13 @@ static int um_send(um_state *hndl, const int dev, const unsigned char *data, int
         }
     }
 
-    if((ret = sendto(hndl->socket, (char*)data, dataSize, 0,
-                     (struct sockaddr *) &to, sizeof(IPADDR))) == SOCKET_ERROR)
+    if((ret = sendto(hndl->socket, (char*)data, dataSize, 0, (struct sockaddr *) &to, sizeof(IPADDR))) == SOCKET_ERROR)
     {
         hndl->last_os_errno = getLastError();
         sprintf(hndl->errorstr_buffer,"sendto failed - %s\n", strerror(hndl->last_os_errno));
         return set_last_error(hndl, LIBUM_OS_ERROR);
     }
+    hndl->last_msg_ts[dev] = um_get_timestamp_ms();
     return ret;
 }
 
@@ -596,10 +596,10 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout)
     hndl->timeout = timeout;
     for(i = 0; i < LIBUM_MAX_DEVS; i++)
     {
-        hndl->last_positions[i].x = LIBUM_ARG_UNDEF;
-        hndl->last_positions[i].y = LIBUM_ARG_UNDEF;
-        hndl->last_positions[i].z = LIBUM_ARG_UNDEF;
-        hndl->last_positions[i].d = LIBUM_ARG_UNDEF;
+        hndl->last_positions[i].x = SMCP1_ARG_UNDEF;
+        hndl->last_positions[i].y = SMCP1_ARG_UNDEF;
+        hndl->last_positions[i].z = SMCP1_ARG_UNDEF;
+        hndl->last_positions[i].d = SMCP1_ARG_UNDEF;
     }
 
     hndl->own_id = SMCP1_ALL_PCS - 100 - (um_get_timestamp_us()&100);
@@ -740,12 +740,11 @@ static int um_set_drive_status(um_state *hndl, const int dev, const int value)
     return 0;
 }
 
-static int is_invalid_pos(const float pos)
-{
-    if((pos < -1000 || pos > LIBUM_MAX_POSITION) && pos != SMCP1_ARG_UNDEF)
-        return LIBUM_INVALID_ARG;
-    return 0;
-}
+static bool um_arg_undef(const float arg)
+{   return isnanf(arg) || arg == SMCP1_ARG_UNDEF || arg == INT32_MIN; }
+
+static bool um_invalid_pos(const float pos)
+{   return (pos < -1000 || pos > LIBUM_MAX_POSITION) && !um_arg_undef(pos); }
 
 static int um2nm(const float um)
 {   return (int)(um*1000.0); }
@@ -771,13 +770,13 @@ int um_goto_position(um_state *hndl, const int dev, const float x, const float y
         return set_last_error(hndl, LIBUM_NOT_OPEN);
     if(is_invalid_dev(dev))
         return set_last_error(hndl, LIBUM_INVALID_DEV);
-    if(is_invalid_pos(x) || is_invalid_pos(y) || is_invalid_pos(z) || is_invalid_pos(d))
+    if(um_invalid_pos(x) || um_invalid_pos(y) || um_invalid_pos(z) || um_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
-    args[argc++] = (x==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(x);
-    args[argc++] = (y==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(y);
-    args[argc++] = (z==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(z);
-    if(d != SMCP1_ARG_UNDEF || speed || mode)
-        args[argc++] = (d==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(d);
+    args[argc++] = um_arg_undef(x) ? SMCP1_ARG_UNDEF:um2nm(x);
+    args[argc++] = um_arg_undef(y) ? SMCP1_ARG_UNDEF:um2nm(y);
+    args[argc++] = um_arg_undef(z) ? SMCP1_ARG_UNDEF:um2nm(z);
+    if(!um_arg_undef(d) || speed || mode)
+        args[argc++] = um_arg_undef(d)?SMCP1_ARG_UNDEF:um2nm(d);
     if(speed || mode || max_acc)
         args[argc++] = speed;
     if(mode || max_acc)
@@ -813,7 +812,7 @@ int um_goto_position_ext(um_state *hndl, const int dev,
         return set_last_error(hndl, LIBUM_NOT_OPEN);
     if(is_invalid_dev(dev))
         return set_last_error(hndl, LIBUM_INVALID_DEV);
-    if(is_invalid_pos(x) || is_invalid_pos(y) || is_invalid_pos(z) || is_invalid_pos(d))
+    if(um_invalid_pos(x) || um_invalid_pos(y) || um_invalid_pos(z) || um_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
     args[argc++] = (x==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(x);
     args[argc++] = (y==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(y);
@@ -880,17 +879,17 @@ float um_get_position(um_state *hndl, const int dev, const char axis)
     {
     case 'x':
     case 'X':
-        if(positions->x == (float)LIBUM_ARG_UNDEF)
+        if(positions->x == (float)SMCP1_ARG_UNDEF)
             return 0.0;
         return nm2um(positions->x);
     case 'y':
     case 'Y':
-        if(positions->y == (float)LIBUM_ARG_UNDEF)
+        if(positions->y == (float)SMCP1_ARG_UNDEF)
             return 0.0;
         return nm2um(positions->y);
     case 'z':
     case 'Z':
-        if(positions->z == (float)LIBUM_ARG_UNDEF)
+        if(positions->z == (float)SMCP1_ARG_UNDEF)
             return 0.0;
         return nm2um(positions->z);
     case 'w':
@@ -898,7 +897,7 @@ float um_get_position(um_state *hndl, const int dev, const char axis)
     case 'd':
     case 'D':
     case '4':
-        if(positions->d == LIBUM_ARG_UNDEF)
+        if(positions->d == SMCP1_ARG_UNDEF)
             return 0.0;
         return nm2um(positions->d);
     }
@@ -1154,10 +1153,12 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
     if(options&SMCP1_OPT_REQ_ACK && (receiver_id == hndl->own_id || receiver_id == SMCP1_ALL_CUS || receiver_id == SMCP1_ALL_PCS))
     {
         um_log_print(hndl, 3,__PRETTY_FUNCTION__, "Sending ACK to %d id %d", type, message_id);
+        // type and message id copied from request
+
         memcpy(&ack, msg, sizeof(ack));
         ack.sender_id = ntohs(hndl->own_id);
         ack.receiver_id = header->sender_id;
-        ack.options = ntohl(options & (~SMCP1_OPT_ACK));
+        ack.options =  htonl(SMCP1_OPT_ACK);
         ack.sub_blocks = 0;
         um_send(hndl, sender_id, (unsigned char*) &ack, sizeof(ack));
     }
@@ -1234,9 +1235,23 @@ int um_receive(um_state *hndl, const int timelimit)
 {
     if(!hndl)
         return set_last_error(hndl, LIBUM_NOT_OPEN);
-    int ret, count = 0;
+    int dev, ret, count = 0;
     um_message resp;
-    unsigned long long start = um_get_timestamp_ms();
+    unsigned long long now = um_get_timestamp_ms();
+
+    for(dev = 1; dev < LIBUM_MAX_DEVS; dev++)
+    {
+        unsigned long long ts = hndl->last_msg_ts[dev];
+        if(ts && hndl->addresses[dev].sin_family && now - ts > 30000)
+        {
+            if(um_cmd(hndl, dev, SMCP1_CMD_PING, 0, NULL) < 0)
+            {
+                memset(&hndl->addresses[dev], 0, sizeof(IPADDR));
+                hndl->last_msg_ts[dev] = 0;
+            }
+        }
+    }
+
     if(!timelimit)
     {
         do
@@ -1253,7 +1268,7 @@ int um_receive(um_state *hndl, const int timelimit)
                 count++;
             else if(ret < 0 && ret != LIBUM_TIMEOUT && ret != LIBUM_INVALID_DEV)
                 return ret;
-        } while((int)get_elapsed(start) < timelimit);
+        } while((int)get_elapsed(now) < timelimit);
     }
     return count;
 }
@@ -1679,19 +1694,19 @@ int um_get_positions(um_state *hndl, const int dev, const int time_limit,
 
     if((elapsed < (unsigned long)time_limit || time_limit == LIBUM_TIMELIMIT_CACHE_ONLY) && time_limit != LIBUM_TIMELIMIT_DISABLED)
     {
-        if(positions->x != LIBUM_ARG_UNDEF && x) {
+        if(positions->x != SMCP1_ARG_UNDEF && x) {
             *x = nm2um(positions->x);
             ret++;
         }
-        if(positions->y != LIBUM_ARG_UNDEF && y) {
+        if(positions->y != SMCP1_ARG_UNDEF && y) {
             *y = nm2um(positions->y);
             ret++;
         }
-        if(positions->z != LIBUM_ARG_UNDEF && z) {
+        if(positions->z != SMCP1_ARG_UNDEF && z) {
             *z = nm2um(positions->z);
             ret++;
         }
-        if(positions->d != LIBUM_ARG_UNDEF && d) {
+        if(positions->d != SMCP1_ARG_UNDEF && d) {
             *d = nm2um(positions->d);
             ret++;
         }
@@ -1708,24 +1723,24 @@ int um_get_positions(um_state *hndl, const int dev, const int time_limit,
         int time_step = um_update_position_cache_time(hndl, dev_id);
         um_update_positions_cache(hndl, dev_id, 0, resp[0], time_step);
         if(x)
-            *x = positions->x != LIBUM_ARG_UNDEF?nm2um(positions->x):0.0f;
+            *x = positions->x != SMCP1_ARG_UNDEF?nm2um(positions->x):0.0f;
         if(ret > 1)
         {
             um_update_positions_cache(hndl, dev_id, 1, resp[1], time_step);
             if(y)
-                *y = positions->x != LIBUM_ARG_UNDEF?nm2um(positions->y):0.0f;
+                *y = positions->x != SMCP1_ARG_UNDEF?nm2um(positions->y):0.0f;
         }
         if(ret > 2)
         {
             um_update_positions_cache(hndl, dev_id, 2, resp[2], time_step);
             if(z)
-                *z = positions->z != LIBUM_ARG_UNDEF?nm2um(positions->z):0.0f;
+                *z = positions->z != SMCP1_ARG_UNDEF?nm2um(positions->z):0.0f;
         }
         if(ret > 3)
         {
             um_update_positions_cache(hndl, dev_id, 3, resp[3], time_step);
             if(d)
-                *d = positions->d != LIBUM_ARG_UNDEF?nm2um(positions->d):0.0f;
+                *d = positions->d != SMCP1_ARG_UNDEF?nm2um(positions->d):0.0f;
         }
         positions->updated_us = um_get_timestamp_us();
     }
@@ -1784,13 +1799,13 @@ int um_read_positions(um_state *hndl, const int dev, const int time_limit)
     // Use values from the cache if new enough
     if((elapsed < (unsigned long)time_limit || time_limit == LIBUM_TIMELIMIT_CACHE_ONLY) && time_limit != LIBUM_TIMELIMIT_DISABLED)
     {
-        if(hndl->last_positions[dev_id].x != LIBUM_ARG_UNDEF)
+        if(hndl->last_positions[dev_id].x != SMCP1_ARG_UNDEF)
             ret++;
-        if(hndl->last_positions[dev_id].y != LIBUM_ARG_UNDEF)
+        if(hndl->last_positions[dev_id].y != SMCP1_ARG_UNDEF)
             ret++;
-        if(hndl->last_positions[dev_id].z != LIBUM_ARG_UNDEF)
+        if(hndl->last_positions[dev_id].z != SMCP1_ARG_UNDEF)
             ret++;
-        if(hndl->last_positions[dev_id].d != LIBUM_ARG_UNDEF)
+        if(hndl->last_positions[dev_id].d != SMCP1_ARG_UNDEF)
             ret++;
         if(ret > 0)
             return ret;

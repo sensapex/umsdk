@@ -39,6 +39,7 @@
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 #  include <windows.h>
+#  include <math.h>
 #  define SOCKOPT_CAST   (char *)           /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
 #  define socklen_t       int               /**< cross platform trick, socklen_t is not defined in windows */
 #  define size_t          int               /**< cross platform trick, winsock use int instead of size_t e.g. in recvfrom */
@@ -59,6 +60,7 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 # endif
 #else // !_WINDOWS
 # include <unistd.h>
+# include <math.h>
 # include <arpa/inet.h>
 # include <sys/errno.h>
 typedef int SOCKET;                         /**< cross platform trick, int instead of SOCKET (defined by winsock) in posix systems */
@@ -138,7 +140,8 @@ typedef enum um_status_e
 #define LIBUM_MAX_TIMEOUT         60000    /**< maximum message timeout in milliseconds */
 #define LIBUM_MAX_LOG_LINE_LENGTH 256      /**< maximum log message length */
 
-#define LIBUM_ARG_UNDEF    INT32_MAX       /**< function argument undefined (used when 0 is a valid value */
+#define LIBUM_ARG_UNDEF           NAN      /**< function argument undefined (used for float when 0.0 is a valid value) */
+
 #define LIBUM_FEATURE_VIRTUALX    0        /**< id number for virtual X axis feature */
 
 #define LIBUM_MAX_DEVS            0xFFFF   /**< Max count of concurrent devices supported by this SDK version*/
@@ -217,8 +220,8 @@ typedef struct um_state_s
                                                         SMCP1_OPT_REQ_RESP       0x00000020 // request ACK, 0 = no ACK requested
                                                         SMCP1_OPT_REQ_ACK        0x00000010 // request ACK, 0 = no ACK requested
                                                         */
-    unsigned long long drive_status_ts[LIBUM_MAX_DEVS];
-                                                       /**< position drive state check timestamp - last time PWM seen busy, updated by get_drive_status */
+    unsigned long long drive_status_ts[LIBUM_MAX_DEVS]; /**< position drive state check timestamp - last time PWM seen busy, updated by get_drive_status */
+    unsigned long long last_msg_ts[LIBUM_MAX_DEVS];     /**< Time stamp of last sent packet per device */
 } um_state;
 
 /**
@@ -1143,16 +1146,6 @@ public:
                  const bool allAxisSimultanously = false,
                  const int max_acc = 0)
     {   return um_goto_position(_handle, getDev(dev), x, y, z, w, speed, allAxisSimultanously, max_acc) >= 0; }
-
-    /**
-     * @brief Move virtual axis position
-     * @param x     Position to drive um
-     * @param speed Speed um/sec
-     * @param dev   Device ID (#LIBUM_USE_LAST_DEV to use selected one)
-     * @return `true` if operation was successful, `false` otherwise
-     */
-    bool gotoVirtualPos(const float x, const int speed, const int dev = LIBUM_USE_LAST_DEV)
-    {   return um_goto_virtual_axis_position(_handle, getDev(dev), x, speed) >= 0; }
 
     /**
      * @brief Stop device - typically movement, but also uMc calibration
