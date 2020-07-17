@@ -23,9 +23,10 @@
 #include <string.h>
 #include <sys/timeb.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.121"
+#define VERSION_STR   "v0.122"
 #define COPYRIGHT "Copyright (c) Sensapex. All rights reserved"
 
 #define DEV     1
@@ -184,6 +185,13 @@ void parse_args(int argc, char *argv[], params_struct *params)
             usage(argv);
     }
 }
+
+#ifdef _WINDOWS
+static bool isnanf(const float arg)
+{
+    return isnan(arg);
+}
+#endif
 
 int main(int argc, char *argv[])
 {

@@ -740,6 +740,12 @@ static int um_set_drive_status(um_state *hndl, const int dev, const int value)
     return 0;
 }
 
+
+#ifdef _WINDOWS
+static bool isnanf(const float arg)
+{   return isnan(arg); }
+#endif
+
 static bool um_arg_undef(const float arg)
 {   return isnanf(arg) || arg == SMCP1_ARG_UNDEF || arg == INT32_MIN; }
 
@@ -1530,7 +1536,7 @@ int ump_get_axis_angle(um_state *hndl, const int dev, float *value)
     if((ret = um_send_msg(hndl, dev, SMCP1_CMD_GET_AXIS_ANGLE, 2, args, 0, NULL, 1, &resp)) < 0)
         return ret;
     if(value)
-        *value = (float)resp/10.0;
+        *value = (float)resp/10.0f;
     return resp;
 }
 
