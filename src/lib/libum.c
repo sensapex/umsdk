@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v0.917"
+#define LIBUM_VERSION_STR    "v0.918"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -820,10 +820,10 @@ int um_goto_position_ext(um_state *hndl, const int dev,
         return set_last_error(hndl, LIBUM_INVALID_DEV);
     if(um_invalid_pos(x) || um_invalid_pos(y) || um_invalid_pos(z) || um_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
-    args[argc++] = (x==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(x);
-    args[argc++] = (y==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(y);
-    args[argc++] = (z==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(z);
-    args[argc++] = (d==SMCP1_ARG_UNDEF)?SMCP1_ARG_UNDEF:um2nm(d);
+    args[argc++] = um_arg_undef(x) ? SMCP1_ARG_UNDEF:um2nm(x);
+    args[argc++] = um_arg_undef(y) ? SMCP1_ARG_UNDEF:um2nm(y);
+    args[argc++] = um_arg_undef(z) ? SMCP1_ARG_UNDEF:um2nm(z);
+    args[argc++] = um_arg_undef(d) ? SMCP1_ARG_UNDEF:um2nm(d);
     // backward compatibility trick for uMs or uMp not supporting second sub block,
     // but just one speed argument shared by all axis
     args[argc++] = get_max_speed(speedX, speedY, speedZ, speedD);
@@ -831,14 +831,13 @@ int um_goto_position_ext(um_state *hndl, const int dev,
         args[argc++] = mode;
     if(max_acc)
         args[argc++] = max_acc;
-
-    if(x != SMCP1_ARG_UNDEF || y != SMCP1_ARG_UNDEF || z != SMCP1_ARG_UNDEF || d != SMCP1_ARG_UNDEF)
+    if(um_arg_undef(x) || um_arg_undef(y) || um_arg_undef(z) || um_arg_undef(d))
         args2[argc2++] = speedX;
-    if(y != SMCP1_ARG_UNDEF || z != SMCP1_ARG_UNDEF || d != SMCP1_ARG_UNDEF)
+    if(um_arg_undef(y) || um_arg_undef(z) || um_arg_undef(d))
         args2[argc2++] = speedY;
-    if(z != SMCP1_ARG_UNDEF || d != SMCP1_ARG_UNDEF)
+    if(um_arg_undef(z) || um_arg_undef(d))
         args2[argc2++] = speedZ;
-    if(d != SMCP1_ARG_UNDEF)
+    if(um_arg_undef(d))
         args2[argc2++] = speedD;
     ret = um_send_msg(hndl, dev, SMCP1_CMD_GOTO_POS, argc, args, argc2, args2, 0, NULL);
     um_set_drive_status(hndl, dev, ret>=0?LIBUM_POS_DRIVE_BUSY:LIBUM_POS_DRIVE_FAILED);
@@ -1245,6 +1244,25 @@ int um_receive(um_state *hndl, const int timelimit)
     um_message resp;
     unsigned long long now = um_get_timestamp_ms();
 
+    if(!timelimit)
+    {
+        do
+        {
+            if((ret = um_recv_ext(hndl, &resp, NULL, NULL, 0)) >= 0 || ret == LIBUM_INVALID_DEV)
+                count++;
+        } while(ret >= 0 || ret == LIBUM_INVALID_DEV);
+    }
+    else
+    {
+        do
+        {
+            if((ret = um_recv(hndl, &resp)) >= 0)
+                count++;
+            else if(ret < 0 && ret != LIBUM_TIMEOUT && ret != LIBUM_INVALID_DEV)
+                return ret;
+        } while((int)get_elapsed(now) < timelimit);
+    }
+
     for(dev = 1; dev < LIBUM_MAX_DEVS; dev++)
     {
         unsigned long long ts = hndl->last_msg_ts[dev];
@@ -1258,24 +1276,6 @@ int um_receive(um_state *hndl, const int timelimit)
         }
     }
 
-    if(!timelimit)
-    {
-        do
-        {
-            if((ret = um_recv_ext(hndl, &resp, NULL, NULL, 0)) >= 0)
-                count++;
-        } while(ret >= 0);
-    }
-    else
-    {
-        do
-        {
-            if((ret = um_recv(hndl, &resp)) >= 0)
-                count++;
-            else if(ret < 0 && ret != LIBUM_TIMEOUT && ret != LIBUM_INVALID_DEV)
-                return ret;
-        } while((int)get_elapsed(now) < timelimit);
-    }
     return count;
 }
 
