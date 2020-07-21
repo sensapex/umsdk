@@ -229,11 +229,12 @@ typedef struct um_state_s
  *
  * @param   udp_target_address    typically an UDP broadcast address
  * @param   timeout               message timeout in milliseconds
+ * @param   group                 m0 for default group 'A' on TSC UI
  *
  * @return  Pointer to created session handle. NULL if an error occured
  */
 
-LIBUM_SHARED_EXPORT um_state *um_open(const char *udp_target_address, const unsigned int timeout);
+LIBUM_SHARED_EXPORT um_state *um_open(const char *udp_target_address, const unsigned int timeout, const int group);
 
 /**
  * @brief Close the UDP socket if open and free the state structure allocated in open

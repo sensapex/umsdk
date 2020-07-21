@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 
     parse_args(argc, argv, &params);
 
-    if((handle = um_open(params.address, params.timeout)) == NULL)
+    if((handle = um_open(params.address, params.timeout, 0)) == NULL)
     {
         // Feeding NULL handle is intentional, it obtains the
         // last OS error which prevented the port to be opened

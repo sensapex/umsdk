@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v0.918"
+#define LIBUM_VERSION_STR    "v0.919"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -577,10 +577,15 @@ static int um_send(um_state *hndl, const int dev, const unsigned char *data, int
     return ret;
 }
 
-um_state *um_open(const char *udp_target_address, const unsigned int timeout)
+um_state *um_open(const char *udp_target_address, const unsigned int timeout, const int group)
 {
     int i;
     um_state *hndl;
+    if(group < 0 || group > 10)
+    {
+        // LIBUM_INVALID_ARG
+        return NULL;
+    }
     if(timeout > LIBUM_MAX_TIMEOUT)
     {
         // LIBUM_INVALID_ARG);
@@ -590,7 +595,7 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout)
         return NULL;
     memset(hndl, 0, sizeof(um_state));
     hndl->socket = INVALID_SOCKET;
-    hndl->udp_port = SMCP1_DEF_UDP_PORT;
+    hndl->udp_port = SMCP1_DEF_UDP_PORT+group;
     hndl->retransmit_count = 3;
     hndl->refresh_time_limit = LIBUM_DEF_REFRESH_TIME;
     hndl->timeout = timeout;
