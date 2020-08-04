@@ -364,7 +364,28 @@ LIBUM_SHARED_EXPORT int um_read_version(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int um_get_axis_count(um_state * hndl, const int dev);
 
 /**
- * @brief An advanced API to drive certain manipulator to a defined position.
+ * @brief Initialize uMp or uMs zero position
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   axis_mask Select axis to move, 1 = X, 2 = Y, 4 = Z, 8 = D, 0 or 15 for all.
+ * @return  Negative value if an error occured. Zero or positive value otherwise.
+ */
+
+LIBUM_SHARED_EXPORT int um_init_zero(um_state * hndl, const int dev, const int axis_mask);
+
+/**
+ * @brief Manipulator load calibration
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @return  Negative value if an error occured. Zero or positive value otherwise.
+ */
+
+LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state * hndl, const int dev);
+
+/**
+ * @brief Drive uMp or uMs to a defined position.
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
@@ -383,7 +404,7 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
                                          const int max_acc);
 
 /**
- * @brief An alternative API to drive device to a defined position with axis specific speed
+ * @brief An alternative API to drive uMp or uMs to a defined position with axis specific speed
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
@@ -1247,7 +1268,7 @@ public:
      * @param dev      Device ID
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool umvSetPressure(const int channel, const float value, const int dev = LIBUM_USE_LAST_DEV)
+    bool umcSetPressure(const int channel, const float value, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_set_pressure_setting(_handle, getDev(dev), channel, value) >= 0; }
 
     /**
@@ -1258,7 +1279,7 @@ public:
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool umvGetPressure(const int channel, float *value, const int dev = LIBUM_USE_LAST_DEV)
+    bool umcGetPressure(const int channel, float *value, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_get_pressure_setting(_handle, getDev(dev), channel, value) >= 0; }
 
     /**
@@ -1268,7 +1289,7 @@ public:
      * @param dev      Device ID
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool umvMeasurePressure(const int channel, float *value, const int dev = LIBUM_USE_LAST_DEV)
+    bool umcMeasurePressure(const int channel, float *value, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_measure_pressure(_handle, getDev(dev), channel, value) >= 0; }
 
     /**
@@ -1278,7 +1299,7 @@ public:
      * @param dev      Device ID
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool umvSetValve(const int channel, const bool state, const int dev = LIBUM_USE_LAST_DEV)
+    bool umcSetValve(const int channel, const bool state, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_set_valve(_handle, getDev(dev), channel, state) >= 0; }
 
     /**
@@ -1288,7 +1309,7 @@ public:
      * @return negative if an error occured, valve state 0 or 1 othervice
      */
 
-    int umvGetValve(const int channel, const int dev = LIBUM_USE_LAST_DEV)
+    int umcGetValve(const int channel, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_get_valve(_handle, getDev(dev), channel); }
 
     /**
