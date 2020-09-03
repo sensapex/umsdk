@@ -375,6 +375,17 @@ LIBUM_SHARED_EXPORT int um_get_axis_count(um_state * hndl, const int dev);
 LIBUM_SHARED_EXPORT int um_init_zero(um_state * hndl, const int dev, const int axis_mask);
 
 /**
+ * @brief Save uMp or uMs zero positions.
+ *
+ * @param   hndl        Pointer to session handle
+ * @param   dev         Device ID *
+ * @return  Negative value if an error occured. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_save_zero(um_state *hndl, const int dev);
+
+
+/**
  * @brief Manipulator load calibration
  *
  * @param   hndl    Pointer to session handle
@@ -383,6 +394,7 @@ LIBUM_SHARED_EXPORT int um_init_zero(um_state * hndl, const int dev, const int a
  */
 
 LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state * hndl, const int dev);
+
 
 /**
  * @brief Drive uMp or uMs to a defined position.

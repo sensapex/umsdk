@@ -86,7 +86,7 @@ typedef enum
     SMCP1_CMD_STOP                     = 1,
     // Warning before switching supply power off, no arguments
     SMCP1_CMD_SLEEP                    = 2,
-    // would be needed, no arguments
+    // No arguments, no arguments
     SMCP1_CMD_REBOOT                   = 3,
     // Initialize zero position drive
     // Arguments:
@@ -104,6 +104,9 @@ typedef enum
 
     // Wakeup from active idle state, no argument, no response
     SMCP1_CMD_WAKEUP                   = 7,
+
+    // Save zero positions, no argument, no response
+    SMCP1_CMD_SAVE_ZERO                = 8,
 
     // Enable/disable PEN mode, VZ, tracking etc
     // Arguments: feature number 0-63, value 0 or 1, no response

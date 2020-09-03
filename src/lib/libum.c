@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v0.920"
+#define LIBUM_VERSION_STR    "v1.001"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -776,6 +776,11 @@ int um_cmd_ext(um_state *hndl, const int dev, const int cmd, const int argc, con
 int um_init_zero(um_state *hndl, const int dev, const int axis_mask)
 {
     return um_cmd(hndl, dev, SMCP1_CMD_INIT_ZERO, axis_mask?1:0, &axis_mask);
+}
+
+int um_save_zero(um_state *hndl, const int dev)
+{
+    return um_cmd(hndl, dev, SMCP1_CMD_SAVE_ZERO, 0, NULL);
 }
 
 int ump_calibrate_load(um_state *hndl, const int dev)
