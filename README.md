@@ -22,5 +22,5 @@ is usable for multiple type of devices i.e. not only manipulators (uMp).
 by the old ump-sdk has been removed. There is now dev_id argument for all functions
 except for function not related to certain uMx device e.g. um_get_version for obtaining SDK version.
 
-- support for microscope stage (uMs) and pressure controller uMV).
+- support for microscope stage (uMs) and pressure controller (uMV).
 
