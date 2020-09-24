@@ -186,7 +186,7 @@ void parse_args(int argc, char *argv[], params_struct *params)
     }
 }
 
-#ifdef _WINDOWS
+#if defined(_WINDOWS) || (defined(__APPLE__) && defined(__MACH__))
 static bool isnanf(const float arg)
 {
     return isnan(arg);
