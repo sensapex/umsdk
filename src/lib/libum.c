@@ -746,7 +746,7 @@ static int um_set_drive_status(um_state *hndl, const int dev, const int value)
 }
 
 
-#ifdef _WINDOWS
+#if defined(_WINDOWS) || (defined(__APPLE__) && defined(__MACH__))
 static bool isnanf(const float arg)
 {   return isnan(arg); }
 #endif
