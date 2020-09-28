@@ -7,9 +7,9 @@ umsdk is new major development branch that is based on the legacy ump-sdk. Main 
 is usable for multiple type of Sensapex devices i.e. not only manipulators (uMp).
 
 - major efforts have been done to simplify and harmonize the SDK, which includes removing
-revoming alternative variants of some functions. The simplified API supported by the old ump-sdk
-has been also removed, which has not been essential. There is now dev_id argument for all
-functions except for functions not related to certain uMx device e.g. um_get_version for obtaining SDK version.
+alternative function variants and simplified API version. There is now dev_id argument for all
+functions except for the functions not related to certain uMx device
+(e.g. um_get_version for obtaining SDK version).
 
 - includes support for uMs microscope motorization products and uMc automated pressure controller products.
 
