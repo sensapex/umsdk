@@ -6,6 +6,8 @@ umsdk is new major development branch that is based on the legacy ump-sdk. Main 
 - function names are changed from ump_foo_bar to um_foo_bar if function
 is usable for multiple type of Sensapex devices i.e. not only manipulators (uMp).
 
+- positions are floating point numbers in um instead of integers in nm.
+
 - major efforts have been done to simplify and harmonize the SDK, which includes removing
 alternative function variants and simplified API version. There is now dev_id argument for all
 functions except for the functions not related to certain uMx device
@@ -20,7 +22,8 @@ Precompiled windows binaries can be found in
 http://dist.sensapex.com/misc/um-sdk/latest/
 
 and precompiled Doxygen documentation in
-http://dist.sensapex.com/misc/um-sdk/latest/doc/
+http://dist.sensapex.com/misc/um-sdk/latest/doc/ .
 
 There are matlab and labview example scripts for the legacy ump-sdk SDK,
 but not - yet - for this new one (some incompatibilities exist).
+
