@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.001"
+#define LIBUM_VERSION_STR    "v1.010"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -2047,15 +2047,25 @@ int umc_pressure_calib(um_state *hndl, const int dev, const int channel, const i
 }
 
 // uMs specific commands
-int ums_set_lens_position(um_state *hndl, const int dev, const int position)
+int ums_set_lens_position(um_state *hndl, const int dev, const int position, const float lift, const float dip)
 {
+    int argc = 0, args[3];
     if(!hndl)
         return set_last_error(hndl, LIBUM_NOT_OPEN);
     if(is_invalid_dev(dev))
         return set_last_error(hndl, LIBUM_INVALID_DEV);
     if(position < 0 || position > 9)
         return set_last_error(hndl, LIBUM_INVALID_ARG);
-    return um_cmd(hndl, dev, SMCP1_CMD_UMS_SET_LENS_POSITION, 1, &position);
+    if(lift < 0.0 || dip < 0.0)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    args[argc++] = position;
+    if(!um_arg_undef(lift))
+    {
+        args[argc++] = um2nm(lift);
+        if(!um_arg_undef(dip))
+            args[argc++] = um2nm(dip);
+    }
+    return um_cmd(hndl, dev, SMCP1_CMD_UMS_SET_LENS_POSITION, argc, args);
 }
 
 int ums_get_lens_position(um_state *hndl, const int dev)
@@ -2074,6 +2084,57 @@ int ums_get_lens_position(um_state *hndl, const int dev)
     if(resp == -1)
         resp = 0;
     return resp;
+}
+
+int ums_set_objective_configuration(um_state *hndl, const int dev,
+                                    const ums_objective_conf *obj1,
+                                    const ums_objective_conf *obj2)
+{
+    int args[2*4];
+    if(!hndl)
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    if(is_invalid_dev(dev))
+        return set_last_error(hndl, LIBUM_INVALID_DEV);
+    if(!obj1 || !obj2)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    if(obj1->mag <= 0 || obj2->mag <= 0 || obj1->mag > 1000 || obj2->mag > 1000)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    args[0] = obj1->mag;
+    args[1] = um2nm(obj1->x_offset);
+    args[2] = um2nm(obj1->y_offset);
+    args[3] = um2nm(obj1->z_offset);
+    args[4] = obj2->mag;
+    args[5] = um2nm(obj2->x_offset);
+    args[6] = um2nm(obj2->y_offset);
+    args[7] = um2nm(obj2->z_offset);
+    return um_cmd(hndl, dev, SMCP1_CMD_UMS_SET_OBJECTIVE_CONTROL, 8, args);
+}
+
+int ums_get_objective_configuration(um_state *hndl, const int dev,
+                                    ums_objective_conf *obj1,
+                                    ums_objective_conf *obj2)
+{
+    int ret, resp[8];
+    if(!hndl)
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    if(is_invalid_dev(dev))
+        return set_last_error(hndl, LIBUM_INVALID_DEV);
+    memset(obj1, 0, sizeof(ums_objective_conf));
+    memset(obj2, 0, sizeof(ums_objective_conf));
+
+    if((ret = um_send_msg(hndl, dev, SMCP1_CMD_UMS_GET_OBJECTIVE_CONTROL, 0, NULL, 0, NULL, 8, resp)) < 0)
+        return ret;
+    if(ret != 8)
+        return set_last_error(hndl, LIBUM_INVALID_RESP);
+    obj1->mag = resp[0];
+    obj1->x_offset = nm2um(resp[1]);
+    obj1->y_offset = nm2um(resp[2]);
+    obj1->z_offset = nm2um(resp[3]);
+    obj2->mag = resp[4];
+    obj2->x_offset = nm2um(resp[5]);
+    obj2->y_offset = nm2um(resp[6]);
+    obj2->z_offset = nm2um(resp[7]);
+    return ret;
 }
 
 int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *control, const ums_bowl_center *centers)

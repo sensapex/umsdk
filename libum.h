@@ -420,7 +420,7 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
- * @param   x, y, z, w  Positions, LIBUM_ARG_UNDEF for axis not to be moved
+ * @param   x, y, z, w  Positions, #LIBUM_ARG_UNDEF for axis not to be moved
  * @param   speedX, speedY, speedZ, speedW  in um/s, zero for axis not to be moved
  * @param   mode        0 = one-by-one, 1 = move all axis simultanously.
  * @param   max_acc     maximum acceleration in um/s^2
@@ -727,11 +727,12 @@ LIBUM_SHARED_EXPORT int umc_set_pressure_setting(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int umc_get_pressure_setting(um_state *hndl, const int dev, const int channel, float *value);
 
 /**
- * @brief Set valve stage (operation depends on the actual valve type)
+ * @brief Set valve stage
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
+ * @param   value     0 (user/atmosphere) or 1 (pressure regulator output)
  *
  * @return  Negative value if an error occured. Zero or positive value otherwise
  */
@@ -745,8 +746,7 @@ LIBUM_SHARED_EXPORT int umc_set_valve(um_state *hndl, const int dev, const int c
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
  *
- * @return  Negative value if an error occured. 0 for disabled valve and 1 for enabled (energized) valve
- *
+ * @return  Negative value if an error occured. 0 (user/atmosphere) or 1 (pressure regulator output)
  */
 
 LIBUM_SHARED_EXPORT int umc_get_valve(um_state *hndl, const int dev, const int channel);
@@ -885,20 +885,69 @@ int um_has_unicast_address(um_state *hndl, const int dev);
  * @param   dev       uMs Device ID
  * @param   position  position of the objective 0-X, zero for center position -
  *                    nothing seen on microscope, but lens out of way.
+ * @param   lift      how much objective is lifted before changing the objective, in um.
+ *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
+ * @param   dip       dip depth in um after objective has been changed, 0 to disable,
+ *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
+ *                    Argument ignored if lift is #LIBUM_ARG_UNDEF.
  * @return  Negative value if an error occured. Zero or positive value otherwise.
  */
 
-LIBUM_SHARED_EXPORT int ums_set_lens_position(um_state *hndl, const int dev, const int position);
+LIBUM_SHARED_EXPORT int ums_set_lens_position(um_state *hndl, const int dev, const int position,
+                                              const float move_away, const float dip);
 
 /**
  * @brief Get lens changer position
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID of UMS
- * @return  Negative value if an error occured. 0 if position is unknown or at center, 1-X othervice.
+ *
+ * @return  Negative value if an error occured. 0 if position is unknown or at center, 1 or 2 othervice.
  */
 
 LIBUM_SHARED_EXPORT int ums_get_lens_position(um_state *hndl, const int dev);
+
+/**
+ *
+ * @brief Objective configuration struct
+ *
+ */
+
+typedef struct ums_objective_conf_s
+{
+    int mag;        /**< magnification e.g. 5 or 40 */
+    float x_offset; /**< X-axis offset in um */
+    float y_offset; /**< Y-axis offset in um */
+    float z_offset; /**< Z-axis offset in um */
+} ums_objective_conf;
+
+/**
+ * @brief Set objective configurations
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       uMs Device ID
+ * @param   obj1      objective 1 configuration in struct #ums_objective_conf
+ * @param   obj2      objective 1 configuration in struct #ums_objective_conf
+ * @return  Negative value if an error occured. Zero or positive value otherwise.
+ */
+
+LIBUM_SHARED_EXPORT int ums_set_objective_configuration(um_state *hndl, const int dev,
+                                                        const ums_objective_conf *obj1,
+                                                        const ums_objective_conf *obj2);
+
+/**
+ * @brief Get objective configurations
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       uMs Device ID
+ * @param[out] obj1      objective 1 configuration in struct #ums_objective_conf
+ * @param[out] obj2      objective 1 configuration in struct #ums_objective_conf
+ * @return  Negative value if an error occured. Zero or positive value otherwise.
+ */
+
+LIBUM_SHARED_EXPORT int ums_get_objective_configuration(um_state *hndl, const int dev,
+                                                        ums_objective_conf *obj1,
+                                                        ums_objective_conf *obj2);
 
 // uMs bowl control
 #define UMS_BOWL_MAX_COUNT            24 /**< maximum number of bowls on microscope stage supported by commands below */

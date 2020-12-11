@@ -314,6 +314,24 @@ typedef enum
     // Response: same data what has been written with above set command
     SMCP1_CMD_UMS_GET_BOWL_CONTROL        = 66,
 
+    // Set objective control parameters
+    // Arguments, each INT32
+    //   - objective 1 magnitude
+    //   - objective 1 X offset in nm
+    //   - objective 1 Y offset
+    //   - objective 1 Z offset
+    //   - objective 2 magnitude
+    //   - objective 2 X offset in nm
+    //   - objective 2 Y offset
+    //   - objective 2 Z offset
+    // Response: none
+    SMCP1_CMD_UMS_SET_OBJECTIVE_CONTROL   = 67,
+
+    // Get objective control parameters
+    // Arguments: none
+    // Response: same data what has been written with above set command
+    SMCP1_CMD_UMS_GET_OBJECTIVE_CONTROL   = 68,
+
     // uMa reset
     // Argument: none
     // Response: none
