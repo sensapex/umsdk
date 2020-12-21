@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.010"
+#define LIBUM_VERSION_STR    "v1.011"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -1117,7 +1117,7 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
                 }
                 um_log_print(hndl, 2,__PRETTY_FUNCTION__, "dev %d updated %d position%s %1.3f %1.3f %1.3f %1.3f speeds %1.1f %1.1f %1.1f %1.1fum/s",
                               sender_id, data_size, data_size>1?"s":"",
-                              positions->x, positions->y, positions->z, positions->d,
+                              nm2um(positions->x), nm2um(positions->y), nm2um(positions->z), nm2um(positions->d),
                               positions->speed_x, positions->speed_y, positions->speed_z, positions->speed_d);
             }
             else
