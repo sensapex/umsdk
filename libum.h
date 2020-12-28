@@ -1133,6 +1133,7 @@ public:
      * @brief Open socket and initialize class state to communicate with manipulators
      * @param broadcastAddress  UDP target address as a string with traditional IPv4 syntax e.g. "169.254.255.255"
      * @param timeout           UDP message timeout in milliseconds
+     * @param group             device group, default 0 is group 'A' on TSC
      * @return `true` if operation was successful, `false` otherwise
      */
     bool open(const char *broadcastAddress = LIBUM_DEF_BCAST_ADDRESS, const unsigned int timeout = LIBUM_DEF_TIMEOUT, const int group = 0)
