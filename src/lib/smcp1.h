@@ -493,7 +493,8 @@ typedef enum
     SMCP10_FEAT_TRANSITION_LIMITS       = 2,
     SMCP10_FEAT_W_AS_VIRTUAL_AXIS       = 3,
     SMCP10_FEAT_PREVENT_MOVEMENT        = 4,
-
+    // uMa features at bits 13-15
+    SMCP10_FEAT_UMA_ENABLED             = 13,
     SMCP10_FEAT_DISABLE_LEDS            = 16
 } smcp1_features;
 

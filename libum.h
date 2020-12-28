@@ -584,6 +584,20 @@ LIBUM_SHARED_EXPORT int um_take_step(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int um_cmd_options(um_state *hndl, const int optionbits);
 
 /**
+ * @brief Send a command to a device.
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   cmd     Command ID
+ * @param   argc    Number of arguments (may be zero)
+ * @param   argv    Pointer to command argument array (may be NULL)
+ * @return  Negative value if an error occured. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_cmd(um_state *hndl, const int dev, const int cmd,
+                               const int argc, const int *argv);
+
+/**
  * @brief Get a manipulator parameter value
  *
  * @param   hndl    Pointer to session handle
@@ -875,6 +889,62 @@ LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
 int um_has_unicast_address(um_state *hndl, const int dev);
 
 /**
+ * @brief uMa commands
+ */
+
+/**
+ * @brief Set a uMa register value
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   addr      Register address
+ * @param   value     Data to be written
+ *
+ * @return  Negative value if an error occured. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_set_uma_reg(um_state *hndl, const int dev, const int addr, int value);
+
+/**
+ * @brief   Get a uMa register value
+ * *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   addr    id Parameter id
+ * @param[out] value pointer to the variable to get the register value
+ * @return  Negative value if an error occured. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_get_uma_reg(um_state *hndl, const int dev, const int addr, int *value);
+
+/**
+ * @brief Set uMa register values
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   count     Number of registers to be set, first register at address 0, second at addr 1 etc.
+ * @param   values    Pointer to an array of values (32bit integers at wire)
+ *
+ * @return  Negative value if an error occured. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_set_uma_regs(um_state *hndl, const int dev,
+                                        const int count, const int *values);
+
+/**
+ * @brief Get uMa register values
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   count     Number of registers to be read, first register at address 0, second at addr 1 etc
+ * @param[out] values  Pointer to an array of values (32bit integers at wire)
+ *
+ * @return  Negative value if an error occured. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_get_uma_regs(um_state *hndl, const int dev, const int count, int *values);
+
+/**
  * @brief uMs specifi commands
  */
 
@@ -1026,6 +1096,11 @@ LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, cons
 
 LIBUM_SHARED_EXPORT unsigned long long um_get_timestamp_ms();
 
+// Lower layer function needed by libuma
+#define LIBUM_MAX_MESSAGE_SIZE   1502
+typedef unsigned char um_message[LIBUM_MAX_MESSAGE_SIZE];
+LIBUM_SHARED_EXPORT int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_data_ptr, const int timeout);
+
 /*
  * End of the C-API
  */
@@ -1060,8 +1135,8 @@ public:
      * @param timeout           UDP message timeout in milliseconds
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool open(const char *broadcastAddress = LIBUM_DEF_BCAST_ADDRESS, const unsigned int timeout = LIBUM_DEF_TIMEOUT)
-    {	return (_handle = um_open(broadcastAddress, timeout)) != NULL; }
+    bool open(const char *broadcastAddress = LIBUM_DEF_BCAST_ADDRESS, const unsigned int timeout = LIBUM_DEF_TIMEOUT, const int group = 0)
+    {	return (_handle = um_open(broadcastAddress, timeout, group)) != NULL; }
 
     /**
      * @brief Check if socket is open for device communication
