@@ -20,12 +20,16 @@ HEADERS += ../../libum.h \
 INCLUDEPATH += ../..
 
 windows: {
-    QMAKE_LINK = $$QMAKE_LINK_C
     LIBS += -lws2_32
     LIBS += -shared
     addFiles.path = .
     addFiles.sources = libum.dll
     DEPLOYMENT += addFiles
+
+
+    dlltarget.path = $$PWD/bin
+    target.path = $$PWD/bin
+    INSTALLS += target dlltarget
 }
 
 unix: {

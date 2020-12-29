@@ -886,7 +886,7 @@ LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
  * @return  Negative value if an error occured (null handle). 0 or 1 otherwise
  */
 
-int um_has_unicast_address(um_state *hndl, const int dev);
+LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
 
 /**
  * @brief uMa commands
