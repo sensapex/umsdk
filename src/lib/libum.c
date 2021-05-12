@@ -138,7 +138,7 @@ um_error um_last_error(const um_state *hndl)
 {
     if(!hndl)
         return LIBUM_NOT_OPEN;
-    return  (um_error)hndl->last_error;
+    return (um_error)hndl->last_error;
 }
 
 int um_last_os_errno(const um_state *hndl)
