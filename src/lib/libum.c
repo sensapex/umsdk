@@ -138,7 +138,7 @@ um_error um_last_error(const um_state *hndl)
 {
     if(!hndl)
         return LIBUM_NOT_OPEN;
-    return hndl->last_error;
+    return  (um_error)hndl->last_error;
 }
 
 int um_last_os_errno(const um_state *hndl)
@@ -172,10 +172,10 @@ const char *um_last_errorstr(um_state *hndl)
     }
     if(strlen(hndl->errorstr_buffer))
         return hndl->errorstr_buffer;
-    return um_errorstr(hndl->last_error);
+    return um_errorstr((um_error)hndl->last_error);
 }
 
-const char *um_errorstr(const int ret_code)
+const char *um_errorstr(const um_error ret_code)
 {
     const char *errorstr;
     if(ret_code >= 0)
@@ -591,7 +591,7 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout, co
         // LIBUM_INVALID_ARG);
         return NULL;
     }
-    if(!(hndl = malloc(sizeof(um_state))))
+    if(!(hndl = (um_state*)malloc(sizeof(um_state))))
         return NULL;
     memset(hndl, 0, sizeof(um_state));
     hndl->socket = INVALID_SOCKET;
@@ -700,7 +700,7 @@ int um_get_status(um_state *hndl, const int dev)
 int um_is_busy(um_state *hndl, const int dev)
 {
     int status = um_get_status(hndl, dev);
-    return um_is_busy_status(status);
+    return um_is_busy_status((um_status)status);
 }
 
 int um_get_drive_status(um_state *hndl, const int dev)
@@ -722,13 +722,13 @@ int um_get_drive_status(um_state *hndl, const int dev)
     // If drive status is busy, but pwm status not and 1s elapsed since it was last time,
     // assume drive status notification to be lost and set drive status to completed.
     if(ts && drive_status == LIBUM_POS_DRIVE_BUSY &&
-            !um_is_busy_status(pwm_status) && now-ts > 1000)
+            !um_is_busy_status((um_status)pwm_status) && now-ts > 1000)
     {
         hndl->drive_status[dev_id] = LIBUM_POS_DRIVE_COMPLETED;
         um_log_print(hndl, 1,__PRETTY_FUNCTION__, "Stuck dev %d drive status, PWM was on %1.1fs ago", dev, (float)(now-ts)/1000.0);
     }
     // update last pwm busy time
-    if(um_is_busy_status(pwm_status))
+    if(um_is_busy_status((um_status)pwm_status))
         hndl->drive_status_ts[dev_id] = now;
     return hndl->drive_status[dev_id];
 }
