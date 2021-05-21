@@ -201,6 +201,7 @@ typedef struct um_state_s
     int last_os_errno;                                  /**< OS level errno of the latest error */
     int timeout;                                        /**< UDP transport message timeout */
     int udp_port;                                       /**< Target UDP port */
+    int local_port;                                     /**< Local UDP port */
     int last_status[LIBUM_MAX_DEVS];                    /**< Status cache */
     int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state #LIBUM_DRIVE_BUSY, #LIBUM_DRIVE_COMPLETED or #LIBUM_DRIVE_FAILED */
     unsigned short drive_status_id[LIBUM_MAX_DEVS];     /**< Message ids of the above notifications, used to detect duplicates */
@@ -384,7 +385,6 @@ LIBUM_SHARED_EXPORT int um_init_zero(um_state * hndl, const int dev, const int a
 
 LIBUM_SHARED_EXPORT int um_save_zero(um_state *hndl, const int dev);
 
-
 /**
  * @brief Manipulator load calibration
  *
@@ -393,8 +393,18 @@ LIBUM_SHARED_EXPORT int um_save_zero(um_state *hndl, const int dev);
  * @return  Negative value if an error occured. Zero or positive value otherwise.
  */
 
-LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state * hndl, const int dev);
+LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state *hndl, const int dev);
 
+/**
+ * @brief Manipulator LED control
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   off     1 to turn off all LEDS including position sensors, 0 to restore normal operation
+ * @return  Negative value if an error occured. Zero or positive value otherwise.
+ */
+
+LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int off);
 
 /**
  * @brief Drive uMp or uMs to a defined position.
