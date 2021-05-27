@@ -601,7 +601,7 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout, co
     if(group >= SMCP1_DEF_UDP_PORT)
         hndl->udp_port = hndl->local_port = group;
     else
-        hndl->udp_port = SMCP1_DEF_UDP_PORT+group
+        hndl->udp_port = SMCP1_DEF_UDP_PORT + group;
 #else
     // In linux ports need to symmetric. On the other hand multiple applications can share the same port.
     if(group >= SMCP1_DEF_UDP_PORT)
