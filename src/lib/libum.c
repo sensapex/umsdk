@@ -2,7 +2,7 @@
  * A software development kit for Sensapex 2015 series Micromanipulators,
  * Microscope stage and Pressure controller
  *
- * Copyright (c) 2015-2020, Sensapex Oy
+ * Copyright (c) 2015-2021, Sensapex Oy
  * All rights reserved.
  *
  * This file is part of 2015 series Sensapex uMx device SDK
@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.021"
+#define LIBUM_VERSION_STR    "v1.022"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -455,11 +455,15 @@ static bool udp_init(um_state *hndl, const char *broadcast_address)
         ok = false;
     }
 
+    // Dynamic port used in windows by default
+    if(!hndl->local_port)
+        hndl->laddr.sin_port = 0;
     // change local port to avoid conflict on localhost testing
-    if(udp_is_loopback_address(&hndl->raddr))
-        hndl->laddr.sin_port = htons(hndl->udp_port-2);
+    else if(udp_is_loopback_address(&hndl->raddr))
+        hndl->laddr.sin_port = htons(hndl->local_port-2);
     else
-        hndl->laddr.sin_port = htons(hndl->udp_port);
+        hndl->laddr.sin_port = htons(hndl->local_port);
+
     hndl->raddr.sin_port = htons(hndl->udp_port);
     if(ok)
         ok = udp_set_sock_opt_addr_reuse(hndl);

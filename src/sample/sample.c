@@ -35,7 +35,7 @@
 typedef struct params_s
 {
     float x, y, z, d, X, Y, Z, D, pressure_kpa;
-    int verbose, update, loop, dev, speed, timeout, value, dim_leds;
+    int verbose, update, loop, dev, speed, timeout, value, dim_leds, group;
     int calibrate_pressure, pressure_channel, valve_channel, reset_fluid_detector, pressure_sensor;
     bool lens_position, read_fluid_detectors;
     char *address;
@@ -46,6 +46,7 @@ void usage(char **argv)
     fprintf(stderr,"usage: %s [opts]\n", argv[0]);
     fprintf(stderr,"Generic options\n");
     fprintf(stderr,"-d\tdev (def: %d)\n", DEV);
+    fprintf(stderr,"-g\tgroup (def: 0)\n");
     fprintf(stderr,"-e\tverbose\n");
     fprintf(stderr,"-a\taddress (def: %s)\n", LIBUM_DEF_BCAST_ADDRESS);
     fprintf(stderr,"-u\tposition and status update period (def: %d ms)\n", UPDATE);
@@ -132,6 +133,12 @@ void parse_args(int argc, char *argv[], params_struct *params)
             case 'd':
                 if(i < argc-1 && sscanf(argv[++i],"%d",&v) == 1 && v > 0)
                     params->dev = v;
+                else
+                    usage(argv);
+                break;
+            case 'g':
+                if (i < argc - 1 && sscanf(argv[++i],"%d", &v) == 1 && v > 0)
+                    params->group = v;
                 else
                     usage(argv);
                 break;
@@ -279,7 +286,7 @@ int main(int argc, char *argv[])
 
     parse_args(argc, argv, &params);
 
-    if((handle = um_open(params.address, params.timeout, 0)) == NULL)
+    if((handle = um_open(params.address, params.timeout, params.group)) == NULL)
     {
         // Feeding NULL handle is intentional, it obtains the
         // last OS error which prevented the port to be opened

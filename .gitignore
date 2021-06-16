@@ -10,5 +10,5 @@ Makefile.Debug
 Makefile.Release
 Release
 x64
+win32
 .vs
-
