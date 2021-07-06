@@ -2,7 +2,7 @@
  * A software development kit for Sensapex 2015 series Micromanipulators,
  * Microscope stage and Pressure controller
  *
- * Copyright (c) 2015-2020, Sensapex Oy
+ * Copyright (c) 2015-2021, Sensapex Oy
  * All rights reserved.
  *
  * This file is part of 2015 series Sensapex uMx device SDK
@@ -36,8 +36,8 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.012"
-#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2020. All rights reserved"
+#define LIBUM_VERSION_STR    "v1.022"
+#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
 #define LIBUM_ANY_IPV4_ADDR  "0.0.0.0"
@@ -455,33 +455,33 @@ static bool udp_init(um_state *hndl, const char *broadcast_address)
         ok = false;
     }
 
+    // Dynamic port used in windows by default
+    if(!hndl->local_port)
+        hndl->laddr.sin_port = 0;
     // change local port to avoid conflict on localhost testing
-    if(udp_is_loopback_address(&hndl->raddr))
-        hndl->laddr.sin_port = htons(hndl->udp_port-2);
+    else if(udp_is_loopback_address(&hndl->raddr))
+        hndl->laddr.sin_port = htons(hndl->local_port-2);
     else
-        hndl->laddr.sin_port = htons(hndl->udp_port);
-    hndl->raddr.sin_port = htons(hndl->udp_port);
+        hndl->laddr.sin_port = htons(hndl->local_port);
 
+    hndl->raddr.sin_port = htons(hndl->udp_port);
     if(ok)
         ok = udp_set_sock_opt_addr_reuse(hndl);
-
 #ifndef NO_UDP_MULTICAST
     if(ok && udp_is_multicast_address(&hndl->raddr))
         ok = udp_set_sock_opt_mcast_group(hndl, &hndl->raddr);
 #endif
-
     if(ok && udp_is_broadcast_address(&hndl->raddr))
         ok = udp_set_sock_opt_bcast(hndl);
 
-    int ret = 0, port_shift = 0;
-
-    while(ok && port_shift < 10 && (ret = bind(hndl->socket, (struct sockaddr *) &hndl->laddr, sizeof(IPADDR))) == SOCKET_ERROR)
+    int i, ret = 0;
+    for(i = 0; ok && i < 2 && (ret = bind(hndl->socket, (struct sockaddr *) &hndl->laddr, sizeof(IPADDR))) == SOCKET_ERROR; i++)
     {
         hndl->last_os_errno = getLastError();
-        // TODO apply same trick also for windoze? What is the related error code?
         if(hndl->last_os_errno == EADDRINUSE)
         {
-            hndl->laddr.sin_port = htons(hndl->udp_port - ++port_shift);
+            // Attempt bind dynamic port
+            hndl->laddr.sin_port = 0;
             continue;
         }
         sprintf(hndl->errorstr_buffer, "bind failed - %s\n", strerror(hndl->last_error));
@@ -581,7 +581,12 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout, co
 {
     int i;
     um_state *hndl;
-    if(group < 0 || group > 10)
+    if(group < SMCP1_DEF_UDP_PORT && (group <  0 || group > 10))
+    {
+        // LIBUM_INVALID_ARG
+        return NULL;
+    }
+    if(group > SMCP1_DEF_UDP_PORT+10)
     {
         // LIBUM_INVALID_ARG
         return NULL;
@@ -595,7 +600,19 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout, co
         return NULL;
     memset(hndl, 0, sizeof(um_state));
     hndl->socket = INVALID_SOCKET;
-    hndl->udp_port = SMCP1_DEF_UDP_PORT+group;
+// Use dynamic local port 0 in windows unless explicitly requested with UDP port number as group
+#ifdef _WINDOWS
+    if(group >= SMCP1_DEF_UDP_PORT)
+        hndl->udp_port = hndl->local_port = group;
+    else
+        hndl->udp_port = SMCP1_DEF_UDP_PORT + group;
+#else
+    // In linux ports need to symmetric. On the other hand multiple applications can share the same port.
+    if(group >= SMCP1_DEF_UDP_PORT)
+        hndl->local_port = hndl->udp_port = group;
+    else
+        hndl->local_port = hndl->udp_port = SMCP1_DEF_UDP_PORT+group;
+#endif
     hndl->retransmit_count = 3;
     hndl->refresh_time_limit = LIBUM_DEF_REFRESH_TIME;
     hndl->timeout = timeout;
@@ -787,6 +804,18 @@ int ump_calibrate_load(um_state *hndl, const int dev)
 {
     int arg = 0;
     return um_cmd(hndl, dev, SMCP1_CMD_CALIBRATE, 1, &arg);
+}
+
+int ump_led_control(um_state *hndl, const int dev, const int off)
+{
+    int ret, arg = 0;
+    if(off < 0 || off > 1)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    if((ret = um_set_feature(hndl, dev, SMCP10_FEAT_PREVENT_MOVEMENT, off)) < 0)
+        return ret;
+    if(off)
+        return um_cmd(hndl, dev, SMCP1_CMD_SLEEP, 1, &arg);
+    return um_cmd(hndl, dev, SMCP1_CMD_WAKEUP, 0, NULL);
 }
 
 int um_goto_position(um_state *hndl, const int dev, const float x, const float y, const float z,

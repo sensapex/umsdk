@@ -201,6 +201,7 @@ typedef struct um_state_s
     int last_os_errno;                                  /**< OS level errno of the latest error */
     int timeout;                                        /**< UDP transport message timeout */
     int udp_port;                                       /**< Target UDP port */
+    int local_port;                                     /**< Local UDP port */
     int last_status[LIBUM_MAX_DEVS];                    /**< Status cache */
     int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state #LIBUM_DRIVE_BUSY, #LIBUM_DRIVE_COMPLETED or #LIBUM_DRIVE_FAILED */
     unsigned short drive_status_id[LIBUM_MAX_DEVS];     /**< Message ids of the above notifications, used to detect duplicates */
@@ -248,8 +249,8 @@ LIBUM_SHARED_EXPORT void um_close(um_state *hndl);
 
 /**
  * For most C functions returning int, a negative values means error,
- * got the possible error number or description using some of these functions
- * often the last one is enough.
+ * get the possible error number or description using some of these functions.
+ * Often the last one is enough.
  */
 
 /**
@@ -287,7 +288,7 @@ LIBUM_SHARED_EXPORT const char *um_last_errorstr(um_state *hndl);
 
 
 /**
- * @brief Set up external log print functio by default the library writes
+ * @brief Set up external log print function. By default the library writes
  *        to the stderr if verbose level is higher than zero.
  *
  * @param   hndl            Pointer to session handle
@@ -303,7 +304,7 @@ LIBUM_SHARED_EXPORT int um_set_log_func(um_state *hndl, const int verbose_level,
                                           um_log_print_func func, const void *arg);
 
 /**
- * @brief SDK library version
+ * @brief Get SDK library version
  *
  * @return  Pointer to version string
  */
@@ -333,7 +334,6 @@ LIBUM_SHARED_EXPORT int um_is_busy(um_state *hndl, const int dev);
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- *
  * @return  Status of the selected manipulator, #LIBUM_POS_DRIVE_COMPLETED,
  *          #LIBUM_POS_DRIVE_BUSY or #LIBUM_POS_DRIVE_FAILED
  */
@@ -384,7 +384,6 @@ LIBUM_SHARED_EXPORT int um_init_zero(um_state * hndl, const int dev, const int a
 
 LIBUM_SHARED_EXPORT int um_save_zero(um_state *hndl, const int dev);
 
-
 /**
  * @brief Manipulator load calibration
  *
@@ -393,8 +392,18 @@ LIBUM_SHARED_EXPORT int um_save_zero(um_state *hndl, const int dev);
  * @return  Negative value if an error occured. Zero or positive value otherwise.
  */
 
-LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state * hndl, const int dev);
+LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state *hndl, const int dev);
 
+/**
+ * @brief Manipulator LED control
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   off     1 to turn off all LEDS including position sensors, 0 to restore normal operation
+ * @return  Negative value if an error occured. Zero or positive value otherwise.
+ */
+
+LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int off);
 
 /**
  * @brief Drive uMp or uMs to a defined position.
@@ -405,7 +414,6 @@ LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state * hndl, const int dev);
  * @param   speed       speed in um/s
  * @param   mode        0 = one-by-one, 1 = move all axis simultanously.
  * @param   max_acc     maximum acceleration in um/s^2
- *
  * @return  Negative value if an error occured. Zero or positive value otherwise
  */
 
@@ -784,7 +792,6 @@ LIBUM_SHARED_EXPORT int umc_measure_pressure(um_state *hndl, const int dev, cons
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
- *
  * @return  Negative value if an error occured. Zero or positive value otherwise carrying ADC reading
  */
 
@@ -797,7 +804,6 @@ LIBUM_SHARED_EXPORT int umc_get_pressure_monitor_adc(um_state *hndl, const int d
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
- *
  * @return  Negative value if an error occured. Zero or positive value otherwise.
  */
 
@@ -808,7 +814,6 @@ LIBUM_SHARED_EXPORT int umc_reset_fluid_detector(um_state *hndl, const int dev, 
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
- *
  * @return  Negative value if an error occured. Zero or positive value otherwise.
  * Bit map of channels which has detected fluid e.g. 6 for channels 2 and 3
  */
@@ -822,7 +827,6 @@ LIBUM_SHARED_EXPORT int umc_read_fluid_detectors(um_state *hndl, const int dev);
  * @param[out] sequence Pressure sequence read from the file as an array of integers
  *                      a buffer will be allocated inside this function call,
  *                      buffer will be free'd by start_sequence
- *
  * @return  Negative value if an error occured. Number items in the sequence othervice
  */
 
@@ -832,7 +836,6 @@ LIBUM_SHARED_EXPORT int umc_read_fluid_detectors(um_state *hndl, const int dev);
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   chn       Pressure channel 1-8, 0 for all channels
- *
  * @return  Negative value if an error occured. Zero or positive value otherwise.
  */
 
@@ -845,14 +848,13 @@ LIBUM_SHARED_EXPORT int umc_reset_sensor_offset(um_state *hndl, const int dev, c
  * @param   dev       Device ID
  * @param   chn       Pressure channel 1-8, 0 for all channels
  * @param   delay     Delay between setting and measuring pressure in ms, set to zero to use default value.
- *
  * @return  Negative value if an error occured. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_pressure_calib(um_state *hndl, const int dev, const int chn, const int delay);
 
 /**
- * @brief Get list of manipulators or other compatile devices.
+ * @brief Get list of manipulators or other compatible devices.
  *        Call to this function attempts to cause fast list update by sending a ping as broadcast
  * @param   hndl      Pointer to session handle
  * @param      size   Size of the device list, number of integers
@@ -879,8 +881,8 @@ LIBUM_SHARED_EXPORT int um_get_device_list(um_state *hndl, int *devs, const int 
 LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
 
 /**
- * @brief Check if device unicast address is know
- * @param   hndl      Pointer to session handle
+ * @brief Check if device unicast address is known
+ * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  *
  * @return  Negative value if an error occured (null handle). 0 or 1 otherwise
@@ -1112,8 +1114,8 @@ LIBUM_SHARED_EXPORT int um_recv_ext(um_state *hndl, um_message *msg, int *ext_da
 
 /*!
  * @class LibUm
- * @brief A inline C++ wrapper class for a publis Sensapex uM SDK
- * not depending on Qt or std classes
+ * @brief An inline C++ wrapper class for a public Sensapex uM SDK
+ *        not depending on Qt or std classes
 */
 
 class LibUm
@@ -1122,7 +1124,7 @@ public:
     /**
      * @brief Constructor
      */
-    LibUm() {  _handle = NULL; }
+    LibUm() { _handle = NULL; }
     /**
      * @brief Destructor
      */
@@ -1398,6 +1400,39 @@ public:
                             speed_x, speed_y, speed_z, speed_d,
                             mode, max_acceleration) >= 0; }
 
+     /**
+     * @brief uMp LED control
+     * @param disable  true to turn all manipulator LEDs off, false to restore normal operation
+     * @param dev      Device ID
+     * @return `true` if operation was successful, `false` otherwise
+     */
+     bool umpLEDcontrol(const bool disable, const int dev = LIBUM_USE_LAST_DEV)
+     {  return ump_led_control(_handle, getDev(dev), disable) >= 0; }
+
+
+     /**
+     * @brief uMs set lens position
+     * @param position 1 or 2
+     * @param dev      Device ID
+     * @param lift     how much objective is lifted before changing the objective, in um.
+     *                 default #LIBUM_ARG_UNDEF to use value stored in uMs eeprom (recommended).
+     * @param dip      dip depth in um after objective has been changed, 0 to disable,
+     *                 default #LIBUM_ARG_UNDEF to use value stored in uMs eeprom (recommended).
+     *                 Argument ignored if lift is #LIBUM_ARG_UNDEF.
+     * @return `true`  if operation was successful, `false` otherwise
+     */
+     bool umsSetLensPosition(const int position, const int dev = LIBUM_USE_LAST_DEV,
+                             const float lift = LIBUM_ARG_UNDEF, const float dip = LIBUM_ARG_UNDEF)
+     {  return ums_set_lens_position(_handle, getDev(dev), position, lift, dip) >= 0; }
+
+     /**
+     * @brief uMs get lens position
+     * @param dev      Device ID
+     * @return 1 or 2, 0 if position is unknown and negative for an error
+     */
+     int umsGetLensPosition(const int dev = LIBUM_USE_LAST_DEV)
+     {  return ums_get_lens_position(_handle, getDev(dev)); }
+
     /**
      * @brief Set pressure
      * @param channel  1-8
@@ -1413,7 +1448,6 @@ public:
      * @param channel  1-8
      * @param[out]     Pressure in kPa
      * @param dev      Device ID
-     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool umcGetPressure(const int channel, float *value, const int dev = LIBUM_USE_LAST_DEV)

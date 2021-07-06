@@ -1,7 +1,7 @@
 /*
  * A sample C-program for Sensapex micromanipulator SDK (umpsdk)
  *
- * Copyright (c) 2016-2020, Sensapex Oy
+ * Copyright (c) 2016-2021, Sensapex Oy
  * All rights reserved.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
@@ -26,7 +26,7 @@
 #include <stdbool.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.122"
+#define VERSION_STR   "v0.123"
 #define COPYRIGHT "Copyright (c) Sensapex. All rights reserved"
 
 #define DEV     1
@@ -35,7 +35,7 @@
 typedef struct params_s
 {
     float x, y, z, d, X, Y, Z, D, pressure_kpa;
-    int verbose, update, loop, dev, speed, timeout, value;
+    int verbose, update, loop, dev, speed, timeout, value, dim_leds, group;
     int calibrate_pressure, pressure_channel, valve_channel, reset_fluid_detector, pressure_sensor;
     bool lens_position, read_fluid_detectors;
     char *address;
@@ -46,6 +46,7 @@ void usage(char **argv)
     fprintf(stderr,"usage: %s [opts]\n", argv[0]);
     fprintf(stderr,"Generic options\n");
     fprintf(stderr,"-d\tdev (def: %d)\n", DEV);
+    fprintf(stderr,"-g\tgroup (def: 0)\n");
     fprintf(stderr,"-e\tverbose\n");
     fprintf(stderr,"-a\taddress (def: %s)\n", LIBUM_DEF_BCAST_ADDRESS);
     fprintf(stderr,"-u\tposition and status update period (def: %d ms)\n", UPDATE);
@@ -75,6 +76,8 @@ void usage(char **argv)
     fprintf(stderr,"-r\tchn\treset/calibrate fluid detectors 1-8 (0 to disable)\n");
     fprintf(stderr,"-U\t\tread fluid detectors\n");
     fprintf(stderr,"-B\tchn\tpressure channel to be calibrated\n");
+    fprintf(stderr,"uMp controls\n");
+    fprintf(stderr,"-l\t0|1\t1 to dim manipulator LEDs. 0 to restore normal functionality\n");
     exit(1);
 }
 
@@ -91,6 +94,7 @@ void parse_args(int argc, char *argv[], params_struct *params)
     params->pressure_kpa = LIBUM_ARG_UNDEF;
     params->dev = DEV;
     params->value = -1;
+    params->dim_leds = -1;
     params->update = UPDATE;
     params->address = LIBUM_DEF_BCAST_ADDRESS;
     params->timeout = LIBUM_DEF_TIMEOUT;
@@ -127,6 +131,12 @@ void parse_args(int argc, char *argv[], params_struct *params)
             case 'd':
                 if(i < argc-1 && sscanf(argv[++i],"%d",&v) == 1 && v > 0)
                     params->dev = v;
+                else
+                    usage(argv);
+                break;
+            case 'g':
+                if (i < argc - 1 && sscanf(argv[++i],"%d", &v) == 1 && v > 0)
+                    params->group = v;
                 else
                     usage(argv);
                 break;
@@ -242,6 +252,12 @@ void parse_args(int argc, char *argv[], params_struct *params)
                 else
                     usage(argv);
                 break;
+            case 'l':
+                if(sscanf(argv[++i],"%d",&v) == 1 && v >= 0 && v <= 1)
+                    params->dim_leds = v;
+                else
+                    usage(argv);
+                break;
             default:
                 usage(argv);
                 break;
@@ -268,7 +284,7 @@ int main(int argc, char *argv[])
 
     parse_args(argc, argv, &params);
 
-    if((handle = um_open(params.address, params.timeout, 0)) == NULL)
+    if((handle = um_open(params.address, params.timeout, params.group)) == NULL)
     {
         // Feeding NULL handle is intentional, it obtains the
         // last OS error which prevented the port to be opened
@@ -395,7 +411,6 @@ int main(int argc, char *argv[])
             fprintf(stderr, "reset fluid detector failed - %s\n", um_last_errorstr(handle));
         else
             printf("Channel %d fluid detector reset\n", params.reset_fluid_detector);
-
         um_close(handle);
         exit(ret>=0?0:-ret);
     }
@@ -426,8 +441,19 @@ int main(int argc, char *argv[])
                 break;
             if(loop < params.loop-1)
                 um_receive(handle, params.update);
+            else
+                printf("Channel %d calibration started\n", params.reset_fluid_detector);
         }
         while(++loop < params.loop);
+        um_close(handle);
+        exit(ret>=0?0:ret);
+    }
+    if(params.dim_leds >= 0)
+    {
+        if((ret = ump_led_control(handle, params.dev, params.dim_leds)) < 0)
+            fprintf(stderr, "Manipulator LED control failed - %s\n", um_last_errorstr(handle));
+        else
+            printf("Manipulator %d LEDs %s\n", params.dev, params.dim_leds?"OFF":"ON");
         um_close(handle);
         exit(ret>=0?0:ret);
     }
@@ -505,3 +531,4 @@ int main(int argc, char *argv[])
     um_close(handle);
     exit(!ret);
 }
+

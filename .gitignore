@@ -8,4 +8,7 @@ Makefile
 */custom_driving*
 Makefile.Debug
 Makefile.Release
-windows
+Release
+x64
+win32
+.vs
