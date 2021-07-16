@@ -3,9 +3,9 @@
  * @author  Sensapex <support@sensapex.com>
  * @date    29 May 2020
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
- * @copyright   Copyright (c) 2016-2020 Sensapex. All rights reserved
+ * @copyright   Copyright (c) 2016-2021 Sensapex. All rights reserved
  *
- * The Sensapex uM product family  SDK is free software: you can redistribute
+ * The Sensapex uM product family SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
@@ -874,7 +874,7 @@ LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
  * @return  Negative value if an error occured (null handle). 0 or 1 otherwise
  */
 
-int um_has_unicast_address(um_state *hndl, const int dev);
+LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
 
 /**
  * @brief uMs specifi commands
@@ -1220,10 +1220,10 @@ public:
      * @param y      Destination position for y-actuator in um
      * @param z      Destination position for z-actuator
      * @param w      Destination position for w-actuator
-     * @param speed  Movement speed mode (0 to use default value) um/s^2
+     * @param speed  Movement speed in um/s(0 to use default value)
      * @param dev    Device ID (#LIBUM_USE_LAST_DEV to use selected one)
      * @param allAxisSimultanously Drive mode (default one-by-one)
-     * @param max_acc Maximum acceleration, give value zero to use default
+     * @param max_acc Maximum acceleration in um/s^2, give value zero to use default
      *
      * @return `true` if operation was successful, `false` otherwise
      */
@@ -1407,6 +1407,44 @@ public:
 
     int umcGetValve(const int channel, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_get_valve(_handle, getDev(dev), channel); }
+
+    /**
+    * @brief Reset/calibrate fluid detector.
+    * This function should be called if tube has been replaced or remounted to the detector after cleaning.
+    * First uMc units had a separate control line for each channel. Later ones has a shared line for all channels.
+    *
+    * Fluid detector is an optional accessory.
+    *
+    * @param   channel   Pressure channel, valid values 1-8
+    * @param   dev       Device ID
+    * @return `true` if operation was successful, `false` otherwise
+    */
+
+    bool umcResetFluidDetector(const int channel = 1, const int dev = LIBUM_USE_LAST_DEV)
+    {   return umc_reset_fluid_detector(_handle, getDev(dev), channel); }
+
+    /**
+     * @brief Get state of fluid detectors
+     *
+     * @param dev      Device ID
+     * @return negative if an error occured, detector state othervice
+     */
+
+    int umcReadFluidDetectors(const int dev = LIBUM_USE_LAST_DEV)
+    {   return umc_read_fluid_detectors(_handle, getDev(dev)); }
+
+    /**
+     * @brief Pressure calibration
+     *
+     * @param   channeln  Pressure channel 1-8, 0 for all channels
+     * @param   delay     Delay between setting and measuring pressure in ms, set to zero to use default value.
+     * @param   dev       Device ID
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
+
+     int umcCalibratePressure(const int channel, const int delay = 0, const int dev = LIBUM_USE_LAST_DEV)
+     {  return umc_pressure_calib(_handle, getDev(dev), channel, delay); }
 
     /**
      * @brief Get C-API handle

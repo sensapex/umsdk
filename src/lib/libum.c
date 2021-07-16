@@ -671,20 +671,6 @@ int um_set_log_func(um_state *hndl, const int verbose, um_log_print_func func, c
     return 0;
 }
 
-int um_select_dev(um_state *hndl, const int dev)
-{
-    int ret;
-    if(!hndl)
-        return set_last_error(hndl, LIBUM_NOT_OPEN);
-    if(is_invalid_dev(dev))
-        return set_last_error(hndl, LIBUM_INVALID_DEV);
-    // Ping the device
-    if((ret = um_ping(hndl, dev)) < 0)
-        return ret;
-    hndl->last_device_sent = dev;
-    return ret;
-}
-
 int um_set_refresh_time_limit(um_state * hndl, const int value)
 {
     if(!hndl)
@@ -1335,8 +1321,11 @@ int um_ping(um_state *hndl, const int dev)
         return set_last_error(hndl, LIBUM_NOT_OPEN);
     if(is_invalid_dev(dev))
         return set_last_error(hndl, LIBUM_INVALID_DEV);
-    int dev_id = um_resolve_dev_id(dev);
-    return um_cmd(hndl, dev_id, SMCP1_CMD_PING, 0, NULL);
+    int ret, dev_id = um_resolve_dev_id(dev);
+    if((ret = um_cmd(hndl, dev_id, SMCP1_CMD_PING, 0, NULL)) < 0)
+        return ret;
+    hndl->last_device_sent = dev;
+    return ret;
 }
 
 void swap_byte_order(unsigned char *data)
