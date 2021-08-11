@@ -420,7 +420,7 @@ LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int
 LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
                                          const float x, const float y,
                                          const float z, const float d,
-                                         const int speed, const int mode,
+                                         const float speed, const int mode,
                                          const int max_acc);
 
 /**
@@ -438,8 +438,8 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
                                              const float x, const float y,
                                              const float z, const float d,
-                                             const int speedX, const int speedY,
-                                             const int speedZ, const int speedW,
+                                             const float speedX, const float speedY,
+                                             const float speedZ, const float speedW,
                                              const int mode, const int max_acc);
 /**
  * @brief Stop device

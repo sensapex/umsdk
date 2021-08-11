@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.022"
+#define LIBUM_VERSION_STR    "v1.031"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -804,8 +804,15 @@ int ump_led_control(um_state *hndl, const int dev, const int off)
     return um_cmd(hndl, dev, SMCP1_CMD_WAKEUP, 0, NULL);
 }
 
+static int calc_speed(const float speed)
+{
+    if(speed < 1.0)
+        return (int)(speed*(-1000.0));
+    return (int)speed;
+}
+
 int um_goto_position(um_state *hndl, const int dev, const float x, const float y, const float z,
-                     const float d, const int speed, const int mode, const int max_acc)
+                     const float d, const float speed, const int mode, const int max_acc)
 {
     int ret, args[7], argc = 0;
     if(!hndl)
@@ -814,13 +821,16 @@ int um_goto_position(um_state *hndl, const int dev, const float x, const float y
         return set_last_error(hndl, LIBUM_INVALID_DEV);
     if(um_invalid_pos(x) || um_invalid_pos(y) || um_invalid_pos(z) || um_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
+    if(speed <= 0.0)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+
     args[argc++] = um_arg_undef(x) ? SMCP1_ARG_UNDEF:um2nm(x);
     args[argc++] = um_arg_undef(y) ? SMCP1_ARG_UNDEF:um2nm(y);
     args[argc++] = um_arg_undef(z) ? SMCP1_ARG_UNDEF:um2nm(z);
     if(!um_arg_undef(d) || speed || mode)
         args[argc++] = um_arg_undef(d)?SMCP1_ARG_UNDEF:um2nm(d);
     if(speed || mode || max_acc)
-        args[argc++] = speed;
+        args[argc++] = calc_speed(speed);
     if(mode || max_acc)
         args[argc++] = mode;
     if(max_acc)
@@ -845,8 +855,8 @@ static int get_max_speed(const int X, const int Y, const int Z, const int D)
 int um_goto_position_ext(um_state *hndl, const int dev,
                          const float x, const float y,
                          const float z, const float d,
-                         const int speedX, const int speedY,
-                         const int speedZ, const int speedD,
+                         const float speedX, const float speedY,
+                         const float speedZ, const float speedD,
                          const int mode, const int max_acc)
 {
     int ret, args[7], args2[4], argc = 0, argc2 = 0;
@@ -868,13 +878,13 @@ int um_goto_position_ext(um_state *hndl, const int dev,
     if(max_acc)
         args[argc++] = max_acc;
     if(um_arg_undef(x) || um_arg_undef(y) || um_arg_undef(z) || um_arg_undef(d))
-        args2[argc2++] = speedX;
+        args2[argc2++] = calc_speed(speedX);
     if(um_arg_undef(y) || um_arg_undef(z) || um_arg_undef(d))
-        args2[argc2++] = speedY;
+        args2[argc2++] = calc_speed(speedY);
     if(um_arg_undef(z) || um_arg_undef(d))
-        args2[argc2++] = speedZ;
+        args2[argc2++] = calc_speed(speedZ);
     if(um_arg_undef(d))
-        args2[argc2++] = speedD;
+        args2[argc2++] = calc_speed(speedD);
     ret = um_send_msg(hndl, dev, SMCP1_CMD_GOTO_POS, argc, args, argc2, args2, 0, NULL);
     um_set_drive_status(hndl, dev, ret>=0?LIBUM_POS_DRIVE_BUSY:LIBUM_POS_DRIVE_FAILED);
     return ret;

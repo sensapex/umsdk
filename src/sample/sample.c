@@ -34,8 +34,8 @@
 
 typedef struct params_s
 {
-    float x, y, z, d, X, Y, Z, D, pressure_kpa;
-    int verbose, update, loop, dev, speed, timeout, value, dim_leds, group;
+    float x, y, z, d, X, Y, Z, D, pressure_kpa, speed;
+    int verbose, update, loop, dev, timeout, value, dim_leds, group;
     int calibrate_pressure, pressure_channel, valve_channel, reset_fluid_detector, pressure_sensor;
     bool lens_position, read_fluid_detectors;
     char *address;
@@ -149,8 +149,8 @@ void parse_args(int argc, char *argv[], params_struct *params)
                     usage(argv);
                 break;
             case 's':
-                if(i < argc-1 && sscanf(argv[++i],"%d",&v) == 1 && v > 0)
-                    params->speed = v;
+                if(i < argc-1 && sscanf(argv[++i],"%f",&f) == 1 && f > 0.0)
+                    params->speed = f;
                 else
                     usage(argv);
                 break;
