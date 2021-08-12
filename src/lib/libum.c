@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.031"
+#define LIBUM_VERSION_STR    "v1.032"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -866,6 +866,15 @@ int um_goto_position_ext(um_state *hndl, const int dev,
         return set_last_error(hndl, LIBUM_INVALID_DEV);
     if(um_invalid_pos(x) || um_invalid_pos(y) || um_invalid_pos(z) || um_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
+    if(!um_arg_undef(x) && speedX <= 0.0)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    if(!um_arg_undef(y) && speedY <= 0.0)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    if(!um_arg_undef(z) && speedZ <= 0.0)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    if(!um_arg_undef(w) && speedW <= 0.0)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+
     args[argc++] = um_arg_undef(x) ? SMCP1_ARG_UNDEF:um2nm(x);
     args[argc++] = um_arg_undef(y) ? SMCP1_ARG_UNDEF:um2nm(y);
     args[argc++] = um_arg_undef(z) ? SMCP1_ARG_UNDEF:um2nm(z);
@@ -877,13 +886,13 @@ int um_goto_position_ext(um_state *hndl, const int dev,
         args[argc++] = mode;
     if(max_acc)
         args[argc++] = max_acc;
-    if(um_arg_undef(x) || um_arg_undef(y) || um_arg_undef(z) || um_arg_undef(d))
+    if(!um_arg_undef(x) || !um_arg_undef(y) || !um_arg_undef(z) || !um_arg_undef(d))
         args2[argc2++] = calc_speed(speedX);
-    if(um_arg_undef(y) || um_arg_undef(z) || um_arg_undef(d))
+    if(!um_arg_undef(y) || !um_arg_undef(z) || !um_arg_undef(d))
         args2[argc2++] = calc_speed(speedY);
-    if(um_arg_undef(z) || um_arg_undef(d))
+    if(!um_arg_undef(z) || !um_arg_undef(d))
         args2[argc2++] = calc_speed(speedZ);
-    if(um_arg_undef(d))
+    if(!um_arg_undef(d))
         args2[argc2++] = calc_speed(speedD);
     ret = um_send_msg(hndl, dev, SMCP1_CMD_GOTO_POS, argc, args, argc2, args2, 0, NULL);
     um_set_drive_status(hndl, dev, ret>=0?LIBUM_POS_DRIVE_BUSY:LIBUM_POS_DRIVE_FAILED);
