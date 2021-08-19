@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.032"
+#define LIBUM_VERSION_STR    "v1.034"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -840,9 +840,9 @@ int um_goto_position(um_state *hndl, const int dev, const float x, const float y
     return ret;
 }
 
-static int get_max_speed(const int X, const int Y, const int Z, const int D)
+static float get_max_speed(const float X, const float Y, const float Z, const float D)
 {
-    int ret = X;
+    float ret = X;
     if(Y > ret)
         ret = Y;
     if(Z > ret)
@@ -881,7 +881,7 @@ int um_goto_position_ext(um_state *hndl, const int dev,
     args[argc++] = um_arg_undef(d) ? SMCP1_ARG_UNDEF:um2nm(d);
     // backward compatibility trick for uMs or uMp not supporting second sub block,
     // but just one speed argument shared by all axis
-    args[argc++] = get_max_speed(speedX, speedY, speedZ, speedD);
+    args[argc++] = calc_speed(get_max_speed(speedX, speedY, speedZ, speedD));
     if(mode || max_acc)
         args[argc++] = mode;
     if(max_acc)
