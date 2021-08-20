@@ -410,10 +410,10 @@ LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
- * @param   x, y, z, w  Positions in um, LIBUM_ARG_UNDEF for axis not to be moved
- * @param   speed       speed in um/s
+ * @param   x, y, z, w  Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+ * @param   speed       speed in µm/s
  * @param   mode        0 = one-by-one, 1 = move all axis simultanously.
- * @param   max_acc     maximum acceleration in um/s^2
+ * @param   max_acc     maximum acceleration in µm/s^2
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
@@ -429,9 +429,9 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
  * @param   x, y, z, w  Positions, #LIBUM_ARG_UNDEF for axis not to be moved
- * @param   speedX, speedY, speedZ, speedW  in um/s, zero for axis not to be moved
+ * @param   speedX, speedY, speedZ, speedW  in µm/s, zero for axis not to be moved
  * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
- * @param   max_acc     maximum acceleration in um/s^2
+ * @param   max_acc     maximum acceleration in µm/s^2
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
@@ -537,7 +537,7 @@ LIBUM_SHARED_EXPORT float um_get_position(um_state *hndl, const int dev, const c
  * @param       hndl        Pointer to session handle
  * @param       dev         Device ID
  * @param       axis        Axis name 'x','y','z' or 'd'
- * @return  axis movement speed in um/s
+ * @return  axis movement speed in µm/s
  */
 
 LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char axis);
@@ -547,16 +547,16 @@ LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @param   step_x   step length (in um) for X axis, negative value for backward, zero for axis not to be moved
- * @param   step_y   step length (in um) for Y axis, negative value for backward, zero for axis not to be moved
- * @param   step_z   step length (in um) for Z axis, negative value for backward, zero for axis not to be moved
- * @param   step_w   step length (in um) for D axis, negative value for backward, zero for axis not to be moved
- * @param   speed_x  movement speed (in um/s) for X axis
- * @param   speed_y  movement speed (in um/s) for Y axis
- * @param   speed_z  movement speed (in um/s) for Z axis
- * @param   speed_w  movement speed (in um/s) for D axis
+ * @param   step_x   step length (in µm) for X axis, negative value for backward, zero for axis not to be moved
+ * @param   step_y   step length (in µm) for Y axis, negative value for backward, zero for axis not to be moved
+ * @param   step_z   step length (in µm) for Z axis, negative value for backward, zero for axis not to be moved
+ * @param   step_w   step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
+ * @param   speed_x  movement speed (in µm/s) for X axis
+ * @param   speed_y  movement speed (in µm/s) for Y axis
+ * @param   speed_z  movement speed (in µm/s) for Z axis
+ * @param   speed_w  movement speed (in µm/s) for D axis
  * @param   mode     movement mode (CLS for manipulator or microstepping mode for stage, value 0 for automatic selection)
- * @param   max_acceleration in um/s^2, give value 0 to use default
+ * @param   max_acceleration in µm/s^2, give value 0 to use default
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
@@ -887,9 +887,9 @@ LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
  * @param   dev       uMs Device ID
  * @param   position  position of the objective 0-X, zero for center position -
  *                    nothing seen on microscope, but lens out of way.
- * @param   lift      how much objective is lifted before changing the objective, in um.
+ * @param   lift      how much objective is lifted before changing the objective, in µm.
  *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
- * @param   dip       dip depth in um after objective has been changed, 0 to disable,
+ * @param   dip       dip depth in µm after objective has been changed, 0 to disable,
  *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
  *                    Argument ignored if lift is #LIBUM_ARG_UNDEF.
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
@@ -918,9 +918,9 @@ LIBUM_SHARED_EXPORT int ums_get_lens_position(um_state *hndl, const int dev);
 typedef struct ums_objective_conf_s
 {
     int mag;        /**< magnification e.g. 5 or 40 */
-    float x_offset; /**< X-axis offset in um */
-    float y_offset; /**< Y-axis offset in um */
-    float z_offset; /**< Z-axis offset in um */
+    float x_offset; /**< X-axis offset in µm */
+    float y_offset; /**< Y-axis offset in µm */
+    float z_offset; /**< Z-axis offset in µm */
 } ums_objective_conf;
 
 /**
@@ -957,17 +957,17 @@ LIBUM_SHARED_EXPORT int ums_get_objective_configuration(um_state *hndl, const in
 
 typedef struct
 {
-    float x;             /**< coordinate in um */
-    float y;             /**< coordinate in um */
+    float x;             /**< coordinate in µm */
+    float y;             /**< coordinate in µm */
 } ums_bowl_center;
 
 typedef struct
 {
     int count;           /** number of bowls under microscope stage, zero to disable feature */
-    float objective_od;  /** objective outer diameter in um */
-    float bowl_id;       /** bowl inner diameter in um */
-    float z_limit_low;   /** max safe focus position where XY stage can be moved to any position in um */
-    float z_limit_height; /** max safe focus position before objective is touching the bottom of the bowl in um */
+    float objective_od;  /** objective outer diameter in µm */
+    float bowl_id;       /** bowl inner diameter in µm */
+    float z_limit_low;   /** max safe focus position where XY stage can be moved to any position in µm */
+    float z_limit_height; /** max safe focus position before objective is touching the bottom of the bowl in µm */
 } ums_bowl_control;
 
 /**
@@ -1217,13 +1217,13 @@ public:
     /**
      * @brief Move actuators to given position
      * @param x      Destination position for x-actuator, use #LIBUM_ARG_UNDEF for axis not to be moved
-     * @param y      Destination position for y-actuator in um
+     * @param y      Destination position for y-actuator in µm
      * @param z      Destination position for z-actuator
      * @param w      Destination position for w-actuator
-     * @param speed  Movement speed in um/s(0 to use default value)
+     * @param speed  Movement speed in µm/s(0 to use default value)
      * @param dev    Device ID (#LIBUM_USE_LAST_DEV to use selected one)
      * @param allAxisSimultaneously Drive mode (default one-by-one)
-     * @param max_acc Maximum acceleration in um/s^2, give value zero to use default
+     * @param max_acc Maximum acceleration in µm/s^2, give value zero to use default
      *
      * @return `true` if operation was successful, `false` otherwise
      */
@@ -1292,8 +1292,8 @@ public:
 
     /**
      * @brief Take a step (relative movement from current position)
-     * @param   x,y,z,d  step length (in um), negative value for backward, zero for axis not to be moved
-     * @param   speed    movement speed in um/s for all axis, zero to use default value
+     * @param   x,y,z,d  step length (in µm), negative value for backward, zero for axis not to be moved
+     * @param   speed    movement speed in µm/s for all axis, zero to use default value
      * @param   dev      Device ID
      * @return `true` if operation was successful, `false` otherwise
      */
@@ -1304,14 +1304,14 @@ public:
 
     /**
      * @brief Take a step (relative movement from current position) with separate speed for every axis
-     * @param   step_x   step length (in um) for X axis negative value for backward, zero for axis not to be moved
-     * @param   step_y   step length (in um) for Y axis negative value for backward, zero for axis not to be moved
-     * @param   step_z   step length (in um) for Z axis negative value for backward, zero for axis not to be moved
-     * @param   step_d   step length (in um) for D axis negative value for backward, zero for axis not to be moved
-     * @param   speed_x  movement speed in um/s for X axis, zero to use default value
-     * @param   speed_y  movement speed in um/s for Y axis, zero to use default value
-     * @param   speed_z  movement speed in um/s for Z axis, zero to use default value
-     * @param   speed_d  movement speed in um/s for D axis, zero to use default value
+     * @param   step_x   step length (in µm) for X axis negative value for backward, zero for axis not to be moved
+     * @param   step_y   step length (in µm) for Y axis negative value for backward, zero for axis not to be moved
+     * @param   step_z   step length (in µm) for Z axis negative value for backward, zero for axis not to be moved
+     * @param   step_d   step length (in µm) for D axis negative value for backward, zero for axis not to be moved
+     * @param   speed_x  movement speed in µm/s for X axis, zero to use default value
+     * @param   speed_y  movement speed in µm/s for Y axis, zero to use default value
+     * @param   speed_z  movement speed in µm/s for Z axis, zero to use default value
+     * @param   speed_d  movement speed in µm/s for D axis, zero to use default value
      * @param   mode     (CLS or microstepping resolution) mode
      * @param   max_acceleration
      * @param   dev      Device ID
@@ -1339,9 +1339,9 @@ public:
      * @brief uMs set lens position
      * @param position 1 or 2
      * @param dev      Device ID
-     * @param lift     how much objective is lifted before changing the objective, in um.
+     * @param lift     how much objective is lifted before changing the objective, in µm.
      *                 default #LIBUM_ARG_UNDEF to use value stored in uMs eeprom (recommended).
-     * @param dip      dip depth in um after objective has been changed, 0 to disable,
+     * @param dip      dip depth in µm after objective has been changed, 0 to disable,
      *                 default #LIBUM_ARG_UNDEF to use value stored in uMs eeprom (recommended).
      *                 Argument ignored if lift is #LIBUM_ARG_UNDEF.
      * @return `true`  if operation was successful, `false` otherwise
