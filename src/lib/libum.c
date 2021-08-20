@@ -872,7 +872,7 @@ int um_goto_position_ext(um_state *hndl, const int dev,
         return set_last_error(hndl, LIBUM_INVALID_ARG);
     if(!um_arg_undef(z) && speedZ <= 0.0)
         return set_last_error(hndl, LIBUM_INVALID_ARG);
-    if(!um_arg_undef(w) && speedW <= 0.0)
+    if(!um_arg_undef(d) && speedD <= 0.0)
         return set_last_error(hndl, LIBUM_INVALID_ARG);
 
     args[argc++] = um_arg_undef(x) ? SMCP1_ARG_UNDEF:um2nm(x);
