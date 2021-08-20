@@ -97,7 +97,7 @@ typedef enum um_error_e
     LIBUM_NO_ERROR     =  0,  /**< No error */
     LIBUM_OS_ERROR     = -1,  /**< Operating System level error */
     LIBUM_NOT_OPEN     = -2,  /**< Communication socket not open */
-    LIBUM_TIMEOUT      = -3,  /**< Timeout occured */
+    LIBUM_TIMEOUT      = -3,  /**< Timeout occurred */
     LIBUM_INVALID_ARG  = -4,  /**< Illegal command argument */
     LIBUM_INVALID_DEV  = -5,  /**< Illegal Device Id */
     LIBUM_INVALID_RESP = -6,  /**< Illegal response received */
@@ -134,7 +134,7 @@ typedef enum um_status_e
  */
 
 #define LIBUM_DEF_STORAGE_ID      0        /**< default position storage */
-#define LIBUM_DEF_TIMEOUT         20       /**< default message timeout in millisecods */
+#define LIBUM_DEF_TIMEOUT         20       /**< default message timeout in milliseconds */
 #define LIBUM_DEF_BCAST_ADDRESS  "169.254.255.255" /**< default link-local broadcast address */
 #define LIBUM_DEF_GROUP           0        /**< default manipulator group, group 0 is called 'A' on TCU UI */
 #define LIBUM_MAX_TIMEOUT         60000    /**< maximum message timeout in milliseconds */
@@ -189,7 +189,7 @@ typedef void (*um_log_print_func)(int level, const void *arg, const char *func, 
  */
 typedef struct um_state_s
 {
-    unsigned long last_received_time;                   /**< Timestemp of the latest incoming message */
+    unsigned long last_received_time;                   /**< Timestamp of the latest incoming message */
     SOCKET socket;                                      /**< UDP socket */
     int own_id;                                         /**< The device ID if this SDK */
     unsigned short message_id;                          /**< Message id (autoincremented counter for messages sent by this SDK */
@@ -215,7 +215,7 @@ typedef struct um_state_s
     const void *log_print_arg;                          /**< Argument for the above */
     int next_cmd_options;                               /**< Option bits to set for the smcp commands:
                                                         SMCP1_OPT_WAIT_TRIGGER_1 0x00000200 // Set message to be run when triggered by physical trigger line2
-                                                        SMCP1_OPT_PRIORITY       0x00000100 // Priorizes message to run first. // 0 = normal message
+                                                        SMCP1_OPT_PRIORITY       0x00000100 // Prioritizes message to run first. // 0 = normal message
                                                         SMCP1_OPT_REQ_BCAST      0x00000080 // send ACK, RESP or NOTIFY to the bcast address (combine with REQs below), 0 = unicast to the sender
                                                         SMCP1_OPT_REQ_NOTIFY     0x00000040 //request notification (e.g. on completed memory drive), 0 = do not notify
                                                         SMCP1_OPT_REQ_RESP       0x00000020 // request ACK, 0 = no ACK requested
@@ -232,7 +232,7 @@ typedef struct um_state_s
  * @param   timeout               message timeout in milliseconds
  * @param   group                 m0 for default group 'A' on TSC UI
  *
- * @return  Pointer to created session handle. NULL if an error occured
+ * @return  Pointer to created session handle. NULL if an error occurred
  */
 
 LIBUM_SHARED_EXPORT um_state *um_open(const char *udp_target_address, const unsigned int timeout, const int group);
@@ -297,7 +297,7 @@ LIBUM_SHARED_EXPORT const char *um_last_errorstr(um_state *hndl);
  *                          May be NULL if setting only verbose level for internal log print out to stderr
  * @param   arg             Pointer argument to be looped to the above function may be e.g. a typecasted
  *                          file handle, optional, may be NULL
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_set_log_func(um_state *hndl, const int verbose_level,
@@ -315,7 +315,7 @@ LIBUM_SHARED_EXPORT const char *um_get_version();
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 LIBUM_SHARED_EXPORT int um_ping(um_state *hndl, const int dev);
 
@@ -324,7 +324,7 @@ LIBUM_SHARED_EXPORT int um_ping(um_state *hndl, const int dev);
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_is_busy(um_state *hndl, const int dev);
@@ -347,7 +347,7 @@ LIBUM_SHARED_EXPORT int um_get_drive_status(um_state *hndl, const int dev);
  * @param   dev     Device ID
  * @param[out]  version   Pointer to an allocated buffer for firmware numbers
  * @param   size    size of the above buffer (number of integers)
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_read_version(um_state *hndl, const int dev,
@@ -358,7 +358,7 @@ LIBUM_SHARED_EXPORT int um_read_version(um_state *hndl, const int dev,
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @return  Negative value if an error occured. Axis count otherwise
+ * @return  Negative value if an error occurred. Axis count otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_get_axis_count(um_state * hndl, const int dev);
@@ -369,7 +369,7 @@ LIBUM_SHARED_EXPORT int um_get_axis_count(um_state * hndl, const int dev);
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  * @param   axis_mask Select axis to move, 1 = X, 2 = Y, 4 = Z, 8 = D, 0 or 15 for all.
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int um_init_zero(um_state * hndl, const int dev, const int axis_mask);
@@ -379,7 +379,7 @@ LIBUM_SHARED_EXPORT int um_init_zero(um_state * hndl, const int dev, const int a
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID *
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_save_zero(um_state *hndl, const int dev);
@@ -389,7 +389,7 @@ LIBUM_SHARED_EXPORT int um_save_zero(um_state *hndl, const int dev);
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state *hndl, const int dev);
@@ -400,7 +400,7 @@ LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state *hndl, const int dev);
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  * @param   off     1 to turn off all LEDS including position sensors, 0 to restore normal operation
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int off);
@@ -414,7 +414,7 @@ LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int
  * @param   speed       speed in um/s
  * @param   mode        0 = one-by-one, 1 = move all axis simultanously.
  * @param   max_acc     maximum acceleration in um/s^2
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
@@ -430,9 +430,9 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
  * @param   dev         Device ID
  * @param   x, y, z, w  Positions, #LIBUM_ARG_UNDEF for axis not to be moved
  * @param   speedX, speedY, speedZ, speedW  in um/s, zero for axis not to be moved
- * @param   mode        0 = one-by-one, 1 = move all axis simultanously.
+ * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
  * @param   max_acc     maximum acceleration in um/s^2
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
@@ -446,7 +446,7 @@ LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID, SMCP1_ALL_DEVICES to stop all.
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_stop(um_state * hndl, const int dev);
@@ -479,7 +479,7 @@ LIBUM_SHARED_EXPORT int um_receive(um_state *hndl, const int timelimit);
  * @param[out]  x           Pointer to an allocated buffer for x-actuator position
  * @param[out]  y           Pointer to an allocated buffer for y-actuator position
  * @param[out]  z           Pointer to an allocated buffer for z-actuator position
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const int time_limit,
@@ -497,7 +497,7 @@ LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const in
  * @param[out]  z           Pointer to an allocated buffer for z-actuator speed
  * @param[out]  w           Pointer to an allocated buffer for w-actuator speed
  * @param[out]  elapsed     Pointer to an allocated buffer for value indicating position value age in ms
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT  int um_get_speeds(um_state *hndl, const int dev, float *x, float*y, float *z, float *w, int *elapsedptr);
@@ -513,7 +513,7 @@ LIBUM_SHARED_EXPORT  int um_get_speeds(um_state *hndl, const int dev, float *x, 
  * @param       dev         Device ID
  * @param       time_limit  Timelimit of cache values. If 0 then cached positions are used always.
  *                          If
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_read_positions(um_state *hndl, const int dev, const int time_limit);
@@ -558,7 +558,7 @@ LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char
  * @param   mode     movement mode (CLS for manipulator or microstepping mode for stage, value 0 for automatic selection)
  * @param   max_acceleration in um/s^2, give value 0 to use default
  *
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_take_step(um_state *hndl, const int dev,
@@ -569,12 +569,12 @@ LIBUM_SHARED_EXPORT int um_take_step(um_state *hndl, const int dev,
 /**
  * @brief um_cmd_options
  * Set options for next cmd to be sent for manipulator.
- * This is one time set and will be reseted after sending the next message.
+ * This is one time set and will be reset after sending the next message.
  * Can be used to set the trigger for next command (e.g. goto position)
  * @param   hndl        Pointer to session handle
  * @param   optionbits  Options bit to set. Use following:
  *  SMCP1_OPT_WAIT_TRIGGER_1 Set message to be run when triggered by physical trigger line2
- *  SMCP1_OPT_PRIORITY       Priorizes message to run first. // 0 = normal message
+ *  SMCP1_OPT_PRIORITY       Prioritizes message to run first. // 0 = normal message
  *  SMCP1_OPT_REQ_BCAST      Send ACK, RESP or NOTIFY to the bcast address (combine with REQs below), 0 = unicast to the sender
  *  SMCP1_OPT_REQ_NOTIFY     Request notification (e.g. on completed memory drive), 0 = do not notify
  *  SMCP1_OPT_REQ_RESP       Request RESP, 0 = no RESP requested
@@ -598,7 +598,7 @@ LIBUM_SHARED_EXPORT int um_cmd_options(um_state *hndl, const int optionbits);
  * @param   dev     Device ID
  * @param   param_id Parameter id
  * @param[out] value Pointer to an allocated variable
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_get_param(um_state *hndl, const int dev, const int param_id, int *value);
@@ -611,9 +611,9 @@ LIBUM_SHARED_EXPORT int um_get_param(um_state *hndl, const int dev, const int pa
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
- * @param   param_id  Paramter id
+ * @param   param_id  Parameter id
  * @param   value     Data to be written
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_set_param(um_state *hndl, const int dev,
@@ -624,7 +624,7 @@ LIBUM_SHARED_EXPORT int um_set_param(um_state *hndl, const int dev,
  * @param   hndl      Pointer to session handle
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
  *
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 LIBUM_SHARED_EXPORT int um_set_slow_speed_mode(um_state *hndl, const int dev, const int activated);
 
@@ -632,7 +632,7 @@ LIBUM_SHARED_EXPORT int um_set_slow_speed_mode(um_state *hndl, const int dev, co
  * @brief Read manipulator slow speed mode
  *
  * @param   hndl      Pointer to session handle
- * @return  Negative value if an error occured. 0 = disabled or 1 = enabled value otherwise
+ * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
  */
 LIBUM_SHARED_EXPORT int um_get_slow_speed_mode(um_state *hndl, const int dev);
 
@@ -643,7 +643,7 @@ LIBUM_SHARED_EXPORT int um_get_slow_speed_mode(um_state *hndl, const int dev);
  * @param   hndl      Pointer to session handle
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
  *
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 LIBUM_SHARED_EXPORT int um_set_soft_startmode(um_state *hndl, const int dev, const int activated);
 
@@ -651,7 +651,7 @@ LIBUM_SHARED_EXPORT int um_set_soft_startmode(um_state *hndl, const int dev, con
  * @brief Read manipulator soft startmode
  *
  * @param   hndl      Pointer to session handle
- * @return  Negative value if an error occured. 0 = disabled or 1 = enabled value otherwise
+ * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
  */
 LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
 
@@ -661,7 +661,7 @@ LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  * @param   id      Feature id
- * @return  Negative value if an error occured. 0 if feature disabled, 1 if enabled
+ * @return  Negative value if an error occurred. 0 if feature disabled, 1 if enabled
  */
 
 LIBUM_SHARED_EXPORT int um_get_feature(um_state *hndl, const int dev, const int id);
@@ -674,7 +674,7 @@ LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const 
  * @param   dev       Device ID
  * @param   id        Feature id
  * @param   value     0 to disable and 1 to enable feature
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_set_feature(um_state *hndl, const int dev,
@@ -687,7 +687,7 @@ LIBUM_SHARED_EXPORT int um_set_ext_feature(um_state *hndl, const int dev,
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  * @param   feature_id Feature id
- * @return  Negative value if an error occured. 0 if feature disabled, 1 if enabled
+ * @return  Negative value if an error occurred. 0 if feature disabled, 1 if enabled
  */
 
 LIBUM_SHARED_EXPORT int um_get_feature_functionality(um_state *hndl, const int dev, const int feature_id);
@@ -698,7 +698,7 @@ LIBUM_SHARED_EXPORT int um_get_feature_functionality(um_state *hndl, const int d
  * @param dev        Device id
  * @param[out] value Pointer to an allocated variable, angle in degrees with 0.1 degree resolution.
  *                   May be NULL if integer return value with 1 degree resolution is enough
- * @return Negative value if an error occured, angle in degrees othervice
+ * @return Negative value if an error occurred, angle in degrees otherwise
  */
 
 LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float *value);
@@ -716,7 +716,7 @@ LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float
  * @param   channel   Pressure channel, valid values 1-8
  * @param   value     pressure in kPa, value may be negative
  *
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int umc_set_pressure_setting(um_state *hndl, const int dev,
@@ -729,7 +729,7 @@ LIBUM_SHARED_EXPORT int umc_set_pressure_setting(um_state *hndl, const int dev,
  * @param   channel   Pressure channel, valid values 1-8
  * @param[out] value  Pointer to an allocated variable, will get pressure setting in kPa, may be negative
  *
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_get_pressure_setting(um_state *hndl, const int dev, const int channel, float *value);
@@ -742,7 +742,7 @@ LIBUM_SHARED_EXPORT int umc_get_pressure_setting(um_state *hndl, const int dev, 
  * @param   channel   Pressure channel, valid values 1-8
  * @param   value     0 (user/atmosphere) or 1 (pressure regulator output)
  *
- * @return  Negative value if an error occured. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int umc_set_valve(um_state *hndl, const int dev, const int channel, const int value);
@@ -754,7 +754,7 @@ LIBUM_SHARED_EXPORT int umc_set_valve(um_state *hndl, const int dev, const int c
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
  *
- * @return  Negative value if an error occured. 0 (user/atmosphere) or 1 (pressure regulator output)
+ * @return  Negative value if an error occurred. 0 (user/atmosphere) or 1 (pressure regulator output)
  */
 
 LIBUM_SHARED_EXPORT int umc_get_valve(um_state *hndl, const int dev, const int channel);
@@ -766,7 +766,7 @@ LIBUM_SHARED_EXPORT int umc_get_valve(um_state *hndl, const int dev, const int c
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
  * @param[out] value  Pointer to an allocated variable, will get pressure in kPa, may be negative
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  *
  */
 
@@ -778,7 +778,7 @@ LIBUM_SHARED_EXPORT int umc_measure_pressure(um_state *hndl, const int dev, cons
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
- * @return  Negative value if an error occured. Zero or positive value otherwise carrying ADC reading
+ * @return  Negative value if an error occurred. Zero or positive value otherwise carrying ADC reading
  */
 
 LIBUM_SHARED_EXPORT int umc_get_pressure_monitor_adc(um_state *hndl, const int dev, const int channel);
@@ -790,7 +790,7 @@ LIBUM_SHARED_EXPORT int umc_get_pressure_monitor_adc(um_state *hndl, const int d
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_reset_fluid_detector(um_state *hndl, const int dev, const int channel);
@@ -800,7 +800,7 @@ LIBUM_SHARED_EXPORT int umc_reset_fluid_detector(um_state *hndl, const int dev, 
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  * Bit map of channels which has detected fluid e.g. 6 for channels 2 and 3
  */
 
@@ -813,7 +813,7 @@ LIBUM_SHARED_EXPORT int umc_read_fluid_detectors(um_state *hndl, const int dev);
  * @param[out] sequence Pressure sequence read from the file as an array of integers
  *                      a buffer will be allocated inside this function call,
  *                      buffer will be free'd by start_sequence
- * @return  Negative value if an error occured. Number items in the sequence othervice
+ * @return  Negative value if an error occurred. Number items in the sequence otherwise
  */
 
 /**
@@ -822,7 +822,7 @@ LIBUM_SHARED_EXPORT int umc_read_fluid_detectors(um_state *hndl, const int dev);
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   chn       Pressure channel 1-8, 0 for all channels
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_reset_sensor_offset(um_state *hndl, const int dev, const int chn);
@@ -834,7 +834,7 @@ LIBUM_SHARED_EXPORT int umc_reset_sensor_offset(um_state *hndl, const int dev, c
  * @param   dev       Device ID
  * @param   chn       Pressure channel 1-8, 0 for all channels
  * @param   delay     Delay between setting and measuring pressure in ms, set to zero to use default value.
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_pressure_calib(um_state *hndl, const int dev, const int chn, const int delay);
@@ -853,7 +853,7 @@ LIBUM_SHARED_EXPORT int umc_pressure_calib(um_state *hndl, const int dev, const 
  * for(i = 0; i < ret; i++)
  *    int dev = devids[i]; // do anything to the dev id
  *
- * @return   Negative value if an error occured, count of found devices othervice
+ * @return   Negative value if an error occurred, count of found devices otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_get_device_list(um_state *hndl, int *devs, const int size);
@@ -861,7 +861,7 @@ LIBUM_SHARED_EXPORT int um_get_device_list(um_state *hndl, int *devs, const int 
 /**
  * @brief  Clear SDK internal list of manipulators or other compatible devices,
  *         which are found on current group.
- * @return Negative value if an error occured. Zero or positive value otherwise.
+ * @return Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
@@ -871,13 +871,13 @@ LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  *
- * @return  Negative value if an error occured (null handle). 0 or 1 otherwise
+ * @return  Negative value if an error occurred (null handle). 0 or 1 otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
 
 /**
- * @brief uMs specifi commands
+ * @brief uMs-specific commands
  */
 
 /**
@@ -892,7 +892,7 @@ LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
  * @param   dip       dip depth in um after objective has been changed, 0 to disable,
  *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
  *                    Argument ignored if lift is #LIBUM_ARG_UNDEF.
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_set_lens_position(um_state *hndl, const int dev, const int position,
@@ -904,7 +904,7 @@ LIBUM_SHARED_EXPORT int ums_set_lens_position(um_state *hndl, const int dev, con
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID of UMS
  *
- * @return  Negative value if an error occured. 0 if position is unknown or at center, 1 or 2 othervice.
+ * @return  Negative value if an error occurred. 0 if position is unknown or at center, 1 or 2 otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_get_lens_position(um_state *hndl, const int dev);
@@ -930,7 +930,7 @@ typedef struct ums_objective_conf_s
  * @param   dev       uMs Device ID
  * @param   obj1      objective 1 configuration in struct #ums_objective_conf
  * @param   obj2      objective 1 configuration in struct #ums_objective_conf
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_set_objective_configuration(um_state *hndl, const int dev,
@@ -944,7 +944,7 @@ LIBUM_SHARED_EXPORT int ums_set_objective_configuration(um_state *hndl, const in
  * @param   dev       uMs Device ID
  * @param[out] obj1      objective 1 configuration in struct #ums_objective_conf
  * @param[out] obj2      objective 1 configuration in struct #ums_objective_conf
- * @return  Negative value if an error occured. Zero or positive value otherwise.
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_get_objective_configuration(um_state *hndl, const int dev,
@@ -988,7 +988,7 @@ typedef struct
  *          centers[1].y = 40000.0;
  *          ret = ums_set_bowl_control(hndl, dev, &control, centers);
  *
- * @return  Negative value if an error occured. 0 if position is unknown or at center, 1-X othervice.
+ * @return  Negative value if an error occurred. 0 if position is unknown or at center, 1-X otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *control, const ums_bowl_center *centers);
@@ -1005,7 +1005,7 @@ LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, cons
  *          ums_bowl_center centers[UMS_BOWL_MAX_COUNT]
  *          ret = ums_get_bowl_control(hndl, dev, &control, centers);
  *
- * @return  Negative value if an error occured. Number of bowls (value of control.count) othervice.
+ * @return  Negative value if an error occurred. Number of bowls (value of control.count) otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_get_bowl_control(um_state *hndl, const int dev, ums_bowl_control *control, ums_bowl_center *centers);
@@ -1016,7 +1016,7 @@ LIBUM_SHARED_EXPORT int ums_get_bowl_control(um_state *hndl, const int dev, ums_
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID of UMS
  * @param   control pointer to ums_bowl_control struct where control parameters are populated
- * @return  Negative value if an error occured. 0 if position is unknown or at center, 1-X othervice.
+ * @return  Negative value if an error occurred. 0 if position is unknown or at center, 1-X otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *control, const ums_bowl_center *centers);
@@ -1115,12 +1115,12 @@ public:
     /**
      * @brief cmdOptions
      * Set options for next cmd to be sent to the device.
-     * This is one time set and will be reseted after sending the next message.
+     * This is one time set and will be reset after sending the next message.
      * Can be used to set the trigger for next command (e.g. goto position)
      * @param   hndl        Pointer to session handle
      * @param   optionbits  Options bit to set. Use following:
      *  SMCP1_OPT_WAIT_TRIGGER_1 0x00000200 // Set message to be run when triggered by physical trigger line2
-     *  SMCP1_OPT_PRIORITY       0x00000100 // Priorizes message to run first. // 0 = normal message
+     *  SMCP1_OPT_PRIORITY       0x00000100 // Prioritizes message to run first. // 0 = normal message
      *  SMCP1_OPT_REQ_BCAST      0x00000080 // send ACK, RESP or NOTIFY to the bcast address (combine with REQs below), 0 = unicast to the sender
      *  SMCP1_OPT_REQ_NOTIFY     0x00000040 //request notification (e.g. on completed memory drive), 0 = do not notify
      *  SMCP1_OPT_REQ_RESP       0x00000020 // request RESP, 0 = no RESP requested
@@ -1285,7 +1285,7 @@ public:
     /**
      * @brief Get uMp or uMs axis count
      * @param      dev      Device ID
-     * @return  Negative value if an error occured. Axis count otherwise
+     * @return  Negative value if an error occurred. Axis count otherwise
      */
     int getAxisCount(const int dev = LIBUM_USE_LAST_DEV)
     {   return um_get_axis_count(_handle, getDev(dev)); }
@@ -1402,7 +1402,7 @@ public:
      * @brief Get valve state
      * @param channel  1-8
      * @param dev      Device ID
-     * @return negative if an error occured, valve state 0 or 1 othervice
+     * @return negative if an error occurred, valve state 0 or 1 otherwise
      */
 
     int umcGetValve(const int channel, const int dev = LIBUM_USE_LAST_DEV)
@@ -1427,7 +1427,7 @@ public:
      * @brief Get state of fluid detectors
      *
      * @param dev      Device ID
-     * @return negative if an error occured, detector state othervice
+     * @return negative if an error occurred, detector state otherwise
      */
 
     int umcReadFluidDetectors(const int dev = LIBUM_USE_LAST_DEV)
@@ -1462,7 +1462,7 @@ public:
     {   return um_has_unicast_address(_handle, getDev(dev)) > 0; }
 
     /**
-     * @brief Set up external log print functio by default the library writes
+     * @brief Set up external log print function by default the library writes
      *        to the stderr if verbose level is higher than zero.
      *
      * @param   hndl            Pointer to session handle
@@ -1471,7 +1471,7 @@ public:
      *                          May be NULL if setting only verbose level for internal log print out to stderr
      * @param   arg             Pointer argument to be looped to the above function may be e.g. a typecasted
      *                          file handle, optional, may be NULL
-     * @return  Negative value if an error occured. Zero or positive value otherwise
+     * @return  Negative value if an error occurred. Zero or positive value otherwise
      */
     bool setLogCallback(const int verbose_level, um_log_print_func func, const void *arg)
     {	return um_set_log_func(_handle, verbose_level, func, arg); }
