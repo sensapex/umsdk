@@ -966,8 +966,8 @@ typedef struct
     int count;           /** number of bowls under microscope stage, zero to disable feature */
     float objective_od;  /** objective outer diameter in um */
     float bowl_id;       /** bowl inner diameter in um */
-    float z_limit_low;   /** max safe focus position where XY stage can be moved to any position in um*/
-    float z_limit_hight; /** max sage focus position before objective is touching the bottom of the bowl in um*/
+    float z_limit_low;   /** max safe focus position where XY stage can be moved to any position in um */
+    float z_limit_height; /** max safe focus position before objective is touching the bottom of the bowl in um */
 } ums_bowl_control;
 
 /**
@@ -1222,16 +1222,16 @@ public:
      * @param w      Destination position for w-actuator
      * @param speed  Movement speed in um/s(0 to use default value)
      * @param dev    Device ID (#LIBUM_USE_LAST_DEV to use selected one)
-     * @param allAxisSimultanously Drive mode (default one-by-one)
+     * @param allAxisSimultaneously Drive mode (default one-by-one)
      * @param max_acc Maximum acceleration in um/s^2, give value zero to use default
      *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool gotoPos(const float x, const float y, const float z, const float w,
                  const float speed,  const int dev = LIBUM_USE_LAST_DEV,
-                 const bool allAxisSimultanously = false,
+                 const bool allAxisSimultaneously = false,
                  const int max_acc = 0)
-    {   return um_goto_position(_handle, getDev(dev), x, y, z, w, speed, allAxisSimultanously, max_acc) >= 0; }
+    {   return um_goto_position(_handle, getDev(dev), x, y, z, w, speed, allAxisSimultaneously, max_acc) >= 0; }
 
     /**
      * @brief Stop device - typically movement, but also uMc calibration

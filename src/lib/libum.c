@@ -2187,7 +2187,7 @@ int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *
     args[1] = (int)(control->objective_od*1000000.0);
     args[2] = (int)(control->bowl_id*1000000.0);
     args[3] = (int)(control->z_limit_low*1000000.0);
-    args[4] = (int)(control->z_limit_hight*1000000.0);
+    args[4] = (int)(control->z_limit_height*1000000.0);
 
     for(i = 0; i < control->count; i++)
     {
@@ -2216,7 +2216,7 @@ int ums_get_bowl_control(um_state *hndl, const int dev, ums_bowl_control *contro
     control->objective_od  = (float)resp[1]/1000000.0f;
     control->bowl_id       = (float)resp[2]/1000000.0f;
     control->z_limit_low   = (float)resp[2]/1000000.0f;
-    control->z_limit_hight = (float)resp[4]/1000000.0f;
+    control->z_limit_height = (float)resp[4]/1000000.0f;
     for(i = 0; i < control->count && i < UMS_BOWL_MAX_COUNT; i++)
     {
         centers[i].x = (float)resp[UMS_BOWL_CONTROL_HEADER_SIZE+i*2]/1000000.0f;
