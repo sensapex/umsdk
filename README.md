@@ -2,6 +2,10 @@
 
 SDK for Sensapex uMx devices (Beta).
 
+* uMp - Micromanipulators
+* uMs - Microscope motorization
+* uMc - Pressure control
+
 ### Installation
 
 #### Linux
@@ -9,6 +13,7 @@ SDK for Sensapex uMx devices (Beta).
 ```
 cd src/lib
 make -f Makefile.linux
+sudo make -f Makefile.linux install
 ```
 
 #### MacOS
@@ -16,6 +21,7 @@ make -f Makefile.linux
 ```
 cd src/lib
 make -f Makefile.osx
+sudo make -f Makefile.osx install
 ```
 
 #### Windows
