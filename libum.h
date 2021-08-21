@@ -191,7 +191,7 @@ typedef struct um_state_s
 {
     unsigned long last_received_time;                   /**< Timestamp of the latest incoming message */
     SOCKET socket;                                      /**< UDP socket */
-    int own_id;                                         /**< The device ID if this SDK */
+    int own_id;                                         /**< The device ID of this SDK */
     unsigned short message_id;                          /**< Message id (autoincremented counter for messages sent by this SDK */
     int last_device_sent;                               /**< Device ID of selected and/or communicated target device */
     int last_device_received;                           /**< ID of device that has sent the latest message */
@@ -202,11 +202,11 @@ typedef struct um_state_s
     int timeout;                                        /**< UDP transport message timeout */
     int udp_port;                                       /**< Target UDP port */
     int local_port;                                     /**< Local UDP port */
-    int last_status[LIBUM_MAX_DEVS];                    /**< Status cache */
-    int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state #LIBUM_DRIVE_BUSY, #LIBUM_DRIVE_COMPLETED or #LIBUM_DRIVE_FAILED */
+    int last_status[LIBUM_MAX_DEVS];                    /**< Status cache per device */
+    int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state per device #LIBUM_DRIVE_BUSY, #LIBUM_DRIVE_COMPLETED or #LIBUM_DRIVE_FAILED */
     unsigned short drive_status_id[LIBUM_MAX_DEVS];     /**< Message ids of the above notifications, used to detect duplicates */
-    IPADDR addresses[LIBUM_MAX_DEVS];                   /**< Address cache */
-    um_positions last_positions[LIBUM_MAX_DEVS];        /**< Position cache */
+    IPADDR addresses[LIBUM_MAX_DEVS];                   /**< Address cache per device */
+    um_positions last_positions[LIBUM_MAX_DEVS];        /**< Position cache per device */
     IPADDR laddr;                                       /**< UDP local address */
     IPADDR raddr;                                       /**< UDP remote address */
     char errorstr_buffer[LIBUM_MAX_LOG_LINE_LENGTH];    /**< The work buffer of the latest error string handler */
@@ -221,16 +221,16 @@ typedef struct um_state_s
                                                         SMCP1_OPT_REQ_RESP       0x00000020 // request ACK, 0 = no ACK requested
                                                         SMCP1_OPT_REQ_ACK        0x00000010 // request ACK, 0 = no ACK requested
                                                         */
-    unsigned long long drive_status_ts[LIBUM_MAX_DEVS]; /**< position drive state check timestamp - last time PWM seen busy, updated by get_drive_status */
+    unsigned long long drive_status_ts[LIBUM_MAX_DEVS]; /**< position drive state check timestamp per device - last time PWM seen busy, updated by get_drive_status */
     unsigned long long last_msg_ts[LIBUM_MAX_DEVS];     /**< Time stamp of last sent packet per device */
 } um_state;
 
 /**
  * @brief Open UDP socket, allocate and initialize state structure
  *
- * @param   udp_target_address    typically an UDP broadcast address
+ * @param   udp_target_address    typically the default UDP broadcast address
  * @param   timeout               message timeout in milliseconds
- * @param   group                 m0 for default group 'A' on TSC UI
+ * @param   group                 0 for default group 'A' on TSC UI
  *
  * @return  Pointer to created session handle. NULL if an error occurred
  */
@@ -241,6 +241,7 @@ LIBUM_SHARED_EXPORT um_state *um_open(const char *udp_target_address, const unsi
  * @brief Close the UDP socket if open and free the state structure allocated in open
  *
  * @param   hndl    Pointer to session handle
+ *
  * @return  None
  */
 
@@ -257,6 +258,7 @@ LIBUM_SHARED_EXPORT void um_close(um_state *hndl);
  * @brief Get the latest error
  *
  * @param   hndl    Pointer to session handle
+ *
  * @return  `um_error` error code
  */
 LIBUM_SHARED_EXPORT um_error um_last_error(const um_state *hndl);
@@ -266,6 +268,7 @@ LIBUM_SHARED_EXPORT um_error um_last_error(const um_state *hndl);
  * when um_last_error returns LIBUM_OS_ERROR.
  *
  * @param   hndl    Pointer to session handle
+ *
  * @return  Error code
  */
 LIBUM_SHARED_EXPORT int um_last_os_errno(const um_state *hndl);
@@ -282,6 +285,7 @@ LIBUM_SHARED_EXPORT const char *um_errorstr(const um_error error_code);
  * @brief Get the latest error in human readable format
  *
  * @param   hndl    Pointer to session handle
+ *
  * @return  Pointer to an error string
  */
 LIBUM_SHARED_EXPORT const char *um_last_errorstr(um_state *hndl);
@@ -297,6 +301,7 @@ LIBUM_SHARED_EXPORT const char *um_last_errorstr(um_state *hndl);
  *                          May be NULL if setting only verbose level for internal log print out to stderr
  * @param   arg             Pointer argument to be looped to the above function may be e.g. a typecasted
  *                          file handle, optional, may be NULL
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
@@ -315,6 +320,7 @@ LIBUM_SHARED_EXPORT const char *um_get_version();
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 LIBUM_SHARED_EXPORT int um_ping(um_state *hndl, const int dev);
@@ -324,6 +330,7 @@ LIBUM_SHARED_EXPORT int um_ping(um_state *hndl, const int dev);
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
@@ -334,6 +341,7 @@ LIBUM_SHARED_EXPORT int um_is_busy(um_state *hndl, const int dev);
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
+ *
  * @return  Status of the selected manipulator, #LIBUM_POS_DRIVE_COMPLETED,
  *          #LIBUM_POS_DRIVE_BUSY or #LIBUM_POS_DRIVE_FAILED
  */
@@ -346,7 +354,8 @@ LIBUM_SHARED_EXPORT int um_get_drive_status(um_state *hndl, const int dev);
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  * @param[out]  version   Pointer to an allocated buffer for firmware numbers
- * @param   size    size of the above buffer (number of integers)
+ * @param   size    size of the above buffer (number of integers). 5 is currently sufficient.
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
@@ -358,6 +367,7 @@ LIBUM_SHARED_EXPORT int um_read_version(um_state *hndl, const int dev,
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
+ *
  * @return  Negative value if an error occurred. Axis count otherwise
  */
 
@@ -368,7 +378,7 @@ LIBUM_SHARED_EXPORT int um_get_axis_count(um_state * hndl, const int dev);
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @param   axis_mask Select axis to move, 1 = X, 2 = Y, 4 = Z, 8 = D, 0 or 15 for all.
+ * @param   axis_mask Select axis/axes to move, 1 = X, 2 = Y, 4 = Z, 8 = D, 0 or 15 for all.
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
@@ -406,15 +416,16 @@ LIBUM_SHARED_EXPORT int ump_calibrate_load(um_state *hndl, const int dev);
 LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int off);
 
 /**
- * @brief Drive uMp or uMs to a defined position.
+ * @brief Drive uMp or uMs to the specified position.
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
  * @param   x, y, z, w  Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
- * @param   speed       speed in µm/s
- * @param   mode        0 = one-by-one, 1 = move all axis simultanously.
- * @param   max_acc     maximum acceleration in µm/s^2
- * @return  Negative value if an error occurred. Zero or positive value otherwise
+ * @param   speed       Speed in µm/s
+ * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
+ * @param   max_acc     Maximum acceleration in µm/s^2
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
@@ -424,15 +435,16 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
                                          const int max_acc);
 
 /**
- * @brief An alternative API to drive uMp or uMs to a defined position with axis specific speed
+ * @brief An alternative function to drive uMp or uMs to the specified
+ * position, with axis-specific speed.
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
- * @param   x, y, z, w  Positions, #LIBUM_ARG_UNDEF for axis not to be moved
- * @param   speedX, speedY, speedZ, speedW  in µm/s, zero for axis not to be moved
+ * @param   x, y, z, w  Positions, in µm, or #LIBUM_ARG_UNDEF for axis not to be moved
+ * @param   speedX, speedY, speedZ, speedW  Speeds in µm/s, zero for axis not to be moved
  * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
- * @param   max_acc     maximum acceleration in µm/s^2
- * @return  Negative value if an error occurred. Zero or positive value otherwise
+ * @param   max_acc     Maximum acceleration in µm/s^2
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
@@ -446,20 +458,20 @@ LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID, SMCP1_ALL_DEVICES to stop all.
- * @return  Negative value if an error occurred. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int um_stop(um_state * hndl, const int dev);
 
 /**
- * @brief Read socked to update the position and status caches
+ * @brief Read socket to update the position and status caches
  *
- * This function can be used instead of a millisecond accurate delay
- * to read the socket and thus update the status and positions
- * into the cache
+ * This function can be used as a millisecond-accurate delay
+ * to read the socket and thereafter update the status and positions
+ * in the cache.
  *
  * @param   hndl       Pointer to session handle
- * @para    timelimit  delay in milliseconds, zero for process queued packages with zero wait
+ * @para    timelimit  Delay in milliseconds. Pass 0 to process only the already received messages.
  * @return  Positive value indicates the count of received messages.
  *          Zero if no related messages was received. Negative value indicates an error.
  */
@@ -467,18 +479,19 @@ LIBUM_SHARED_EXPORT int um_stop(um_state * hndl, const int dev);
 LIBUM_SHARED_EXPORT int um_receive(um_state *hndl, const int timelimit);
 
 /**
- * @brief Read positions allowing to control the position value timings.
- *
- * A zero time_limit (LIBUM_TIMELIMIT_CACHE_ONLY) reads cached positions without
- * sending any request to the device.
- * Value -1 (LIBUM_TIMELIMIT_DISABLED) obtains the position always from the device.
+ * @brief Read device position, possibly from a cache.
  *
  * @param       hndl        Pointer to session handle
  * @param       dev         Device ID
- * @param       time_limit  Timelimit of cache values. If 0 then cached positions are used always.
+ * @param       time_limit  Maximum age of acceptable cache value in milliseconds. Pass
+ *                          zero (LIBUM_TIMELIMIT_CACHE_ONLY) to always use cached positions.
+ *                          Pass -1 (LIBUM_TIMELIMIT_DISABLED) to force device read.
  * @param[out]  x           Pointer to an allocated buffer for x-actuator position
  * @param[out]  y           Pointer to an allocated buffer for y-actuator position
  * @param[out]  z           Pointer to an allocated buffer for z-actuator position
+ * @param[out]  w           Pointer to an allocated buffer for w-actuator position
+ * @param[out]  elapsed     Pointer to an allocated buffer for value indicating position value age in ms
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
@@ -486,41 +499,37 @@ LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const in
                                          float *x, float *y, float *z, float *w, int *elapsed);
 
 /**
- * @brief Read latest speeds and obtain time when the values were updated
+ * @brief Read latest speeds and obtain time when the values were updated.
  *
  *
  * @param       hndl        Pointer to session handle
  * @param       dev         Device ID
- *
  * @param[out]  x           Pointer to an allocated buffer for x-actuator speed
  * @param[out]  y           Pointer to an allocated buffer for y-actuator speed
  * @param[out]  z           Pointer to an allocated buffer for z-actuator speed
  * @param[out]  w           Pointer to an allocated buffer for w-actuator speed
  * @param[out]  elapsed     Pointer to an allocated buffer for value indicating position value age in ms
- * @return  Negative value if an error occurred. Zero or positive value otherwise
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT  int um_get_speeds(um_state *hndl, const int dev, float *x, float*y, float *z, float *w, int *elapsedptr);
 
 /**
- * @brief Read positions of certain manipulator to the cache
- *
- * Value -1 (LIBUM_TIMELIMIT_DISABLED) for the time_limit obtains the position always
- * from the manipulator.
- *
+ * @brief Read position of the device into the cache.
  *
  * @param       hndl        Pointer to session handle
  * @param       dev         Device ID
- * @param       time_limit  Timelimit of cache values. If 0 then cached positions are used always.
- *                          If
- * @return  Negative value if an error occurred. Zero or positive value otherwise
+ * @param       time_limit  Maximum age of acceptable cache value in milliseconds. Pass
+ *                          zero (LIBUM_TIMELIMIT_CACHE_ONLY) to always use cached positions.
+ *                          Pass -1 (LIBUM_TIMELIMIT_DISABLED) to force device read.
+  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int um_read_positions(um_state *hndl, const int dev, const int time_limit);
 
 /**
- * @brief An advanced API for obtaining single axis position value from the cache,
- * call after succeeded #um_read_positions_ext
+ * @brief Read a single axis position value from the cache. Populate that cache
+ * beforehand with a #um_read_positions call.
  *
  * @param       hndl        Pointer to session handle
  * @param       dev         Device ID
@@ -545,18 +554,18 @@ LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char
 /**
  * @brief Take a step (relative movement from current position)
  *
- * @param   hndl    Pointer to session handle
- * @param   dev     Device ID
- * @param   step_x   step length (in µm) for X axis, negative value for backward, zero for axis not to be moved
- * @param   step_y   step length (in µm) for Y axis, negative value for backward, zero for axis not to be moved
- * @param   step_z   step length (in µm) for Z axis, negative value for backward, zero for axis not to be moved
- * @param   step_w   step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
- * @param   speed_x  movement speed (in µm/s) for X axis
- * @param   speed_y  movement speed (in µm/s) for Y axis
- * @param   speed_z  movement speed (in µm/s) for Z axis
- * @param   speed_w  movement speed (in µm/s) for D axis
- * @param   mode     movement mode (CLS for manipulator or microstepping mode for stage, value 0 for automatic selection)
- * @param   max_acceleration in µm/s^2, give value 0 to use default
+ * @param   hndl     Pointer to session handle
+ * @param   dev      Device ID
+ * @param   step_x   Step length (in µm) for X axis, negative value for backward, zero for axis not to be moved
+ * @param   step_y   Step length (in µm) for Y axis, negative value for backward, zero for axis not to be moved
+ * @param   step_z   Step length (in µm) for Z axis, negative value for backward, zero for axis not to be moved
+ * @param   step_w   Step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
+ * @param   speed_x  Movement speed (in µm/s) for X axis
+ * @param   speed_y  Movement speed (in µm/s) for Y axis
+ * @param   speed_z  Movement speed (in µm/s) for Z axis
+ * @param   speed_w  Movement speed (in µm/s) for D axis
+ * @param   mode     Movement mode (CLS for manipulator or microstepping mode for stage, value 0 for automatic selection)
+ * @param   max_acceleration Maximum acceleration in µm/s^2. Pass 0 to use default.
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
@@ -567,14 +576,14 @@ LIBUM_SHARED_EXPORT int um_take_step(um_state *hndl, const int dev,
                                      const int mode, const int max_acceleration);
 
 /**
- * @brief um_cmd_options
- * Set options for next cmd to be sent for manipulator.
- * This is one time set and will be reset after sending the next message.
+ * @brief Set options for the next command to be sent to a manipulator.
+ * This is a one-time setting and will be reset after sending the next command.
  * Can be used to set the trigger for next command (e.g. goto position)
+ *
  * @param   hndl        Pointer to session handle
- * @param   optionbits  Options bit to set. Use following:
- *  SMCP1_OPT_WAIT_TRIGGER_1 Set message to be run when triggered by physical trigger line2
- *  SMCP1_OPT_PRIORITY       Prioritizes message to run first. // 0 = normal message
+ * @param   optionbits  Options bit to set. Use the following flag values:
+ *  SMCP1_OPT_WAIT_TRIGGER_1 Set command to be run when triggered by physical trigger line2
+ *  SMCP1_OPT_PRIORITY       Prioritizes command to run first. // 0 = normal command
  *  SMCP1_OPT_REQ_BCAST      Send ACK, RESP or NOTIFY to the bcast address (combine with REQs below), 0 = unicast to the sender
  *  SMCP1_OPT_REQ_NOTIFY     Request notification (e.g. on completed memory drive), 0 = do not notify
  *  SMCP1_OPT_REQ_RESP       Request RESP, 0 = no RESP requested
@@ -592,7 +601,10 @@ LIBUM_SHARED_EXPORT int um_take_step(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int um_cmd_options(um_state *hndl, const int optionbits);
 
 /**
- * @brief Get a manipulator parameter value
+ * @brief Get a device's parameter value
+ *
+ * Note! This API is mainly for Sensapex internal development and production purpose and
+ * should not be used unless you really know what you are doing.
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
@@ -604,7 +616,7 @@ LIBUM_SHARED_EXPORT int um_cmd_options(um_state *hndl, const int optionbits);
 LIBUM_SHARED_EXPORT int um_get_param(um_state *hndl, const int dev, const int param_id, int *value);
 
 /**
- * @brief Set a manipulator parameter value
+ * @brief Set a device's parameter value
  *
  * Note! This API is mainly for Sensapex internal development and production purpose and
  * should not be used unless you really know what you are doing.
@@ -619,7 +631,7 @@ LIBUM_SHARED_EXPORT int um_get_param(um_state *hndl, const int dev, const int pa
 LIBUM_SHARED_EXPORT int um_set_param(um_state *hndl, const int dev,
                                      const int param_id, const int value);
 /**
- * @brief Write manipulator slow speed mode
+ * @brief Write device's slow speed mode
  *
  * @param   hndl      Pointer to session handle
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
@@ -629,7 +641,7 @@ LIBUM_SHARED_EXPORT int um_set_param(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int um_set_slow_speed_mode(um_state *hndl, const int dev, const int activated);
 
 /**
- * @brief Read manipulator slow speed mode
+ * @brief Read device's slow speed mode
  *
  * @param   hndl      Pointer to session handle
  * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
@@ -638,17 +650,17 @@ LIBUM_SHARED_EXPORT int um_get_slow_speed_mode(um_state *hndl, const int dev);
 
 
 /**
- * @brief Write manipulator soft start mode
+ * @brief Write device's soft start mode
  *
  * @param   hndl      Pointer to session handle
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
-LIBUM_SHARED_EXPORT int um_set_soft_startmode(um_state *hndl, const int dev, const int activated);
+LIBUM_SHARED_EXPORT int um_set_soft_start_mode(um_state *hndl, const int dev, const int activated);
 
 /**
- * @brief Read manipulator soft startmode
+ * @brief Read device's soft start mode
  *
  * @param   hndl      Pointer to session handle
  * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
@@ -656,7 +668,10 @@ LIBUM_SHARED_EXPORT int um_set_soft_startmode(um_state *hndl, const int dev, con
 LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
 
 /**
- * @brief Get state of a manipulator feature
+ * @brief Get state of a device's feature
+ *
+ * Note! This API is mainly for Sensapex internal development and production purpose and
+ * should not be used unless you really know what you are doing.
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
@@ -669,6 +684,9 @@ LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const 
 
 /**
  * @brief Enable or disable a device feature
+ *
+ * Note! This API is mainly for Sensapex internal development and production purpose and
+ * should not be used unless you really know what you are doing.
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
@@ -693,7 +711,8 @@ LIBUM_SHARED_EXPORT int um_set_ext_feature(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int um_get_feature_functionality(um_state *hndl, const int dev, const int feature_id);
 
 /**
- * @brief Get axis angle, supported by manipulators, not by uMs
+ * @brief Get manipulator (uMp) axis angle
+ *
  * @param hndl       Pointer to session handle
  * @param dev        Device id
  * @param[out] value Pointer to an allocated variable, angle in degrees with 0.1 degree resolution.
@@ -709,20 +728,21 @@ LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float
  */
 
 /**
- * @brief Set pressure value - regulator settings value
+ * @brief Set pressure
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
- * @param   value     pressure in kPa, value may be negative
+ * @param   value     Pressure in kPa, value may be negative
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int umc_set_pressure_setting(um_state *hndl, const int dev,
                                                  const int channel, const float value);
+
 /**
- * @brief Get current pressure regulator settings value
+ * @brief Get the currently expected pressure (may differ from measurement)
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
@@ -735,7 +755,7 @@ LIBUM_SHARED_EXPORT int umc_set_pressure_setting(um_state *hndl, const int dev,
 LIBUM_SHARED_EXPORT int umc_get_pressure_setting(um_state *hndl, const int dev, const int channel, float *value);
 
 /**
- * @brief Set valve stage
+ * @brief Set valve source
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
@@ -766,8 +786,8 @@ LIBUM_SHARED_EXPORT int umc_get_valve(um_state *hndl, const int dev, const int c
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
  * @param[out] value  Pointer to an allocated variable, will get pressure in kPa, may be negative
- * @return  Negative value if an error occurred. Zero or positive value otherwise.
  *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_measure_pressure(um_state *hndl, const int dev, const int channel, float *value);
@@ -778,6 +798,7 @@ LIBUM_SHARED_EXPORT int umc_measure_pressure(um_state *hndl, const int dev, cons
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise carrying ADC reading
  */
 
@@ -786,10 +807,14 @@ LIBUM_SHARED_EXPORT int umc_get_pressure_monitor_adc(um_state *hndl, const int d
 /**
  * @brief Reset/calibrate fluid detector.
  * This function should be called if tube has been replaced or remounted to the detector after cleaning.
+ * First uMc units had a separate control line for each channel. Later ones has a shared line for all channels.
+ *
+ * Fluid detector is an optional accessory.
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   channel   Pressure channel, valid values 1-8
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
@@ -800,21 +825,12 @@ LIBUM_SHARED_EXPORT int umc_reset_fluid_detector(um_state *hndl, const int dev, 
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
- * @return  Negative value if an error occurred. Zero or positive value otherwise.
- * Bit map of channels which has detected fluid e.g. 6 for channels 2 and 3
+ *
+ * @return  Negative value if an error occurred. Otherwise, a bitmap of channels which
+ * have detected fluid e.g. 10 for channels 2 and 4.
  */
 
 LIBUM_SHARED_EXPORT int umc_read_fluid_detectors(um_state *hndl, const int dev);
-
-/**
- * @brief Read pressure sequence
- *
- * @param      Filename
- * @param[out] sequence Pressure sequence read from the file as an array of integers
- *                      a buffer will be allocated inside this function call,
- *                      buffer will be free'd by start_sequence
- * @return  Negative value if an error occurred. Number items in the sequence otherwise
- */
 
 /**
  * @brief Reset pressure sensor offset
@@ -822,30 +838,33 @@ LIBUM_SHARED_EXPORT int umc_read_fluid_detectors(um_state *hndl, const int dev);
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   chn       Pressure channel 1-8, 0 for all channels
- * @return  Negative value if an error occurred. Zero or positive value otherwise.
+ *
+ * @return  Negative value if an error occurred. The pressure offset, otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_reset_sensor_offset(um_state *hndl, const int dev, const int chn);
 
 /**
- * @brief Pressure calibration
+ * @brief Start the pressure calibration sequence. This returns quickly, while the automated
+ * calibration itself takes many minutes. The device will not report itself as being busy
+ * to #um_is_busy during this process.
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       Device ID
  * @param   chn       Pressure channel 1-8, 0 for all channels
  * @param   delay     Delay between setting and measuring pressure in ms, set to zero to use default value.
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
 LIBUM_SHARED_EXPORT int umc_pressure_calib(um_state *hndl, const int dev, const int chn, const int delay);
 
 /**
- * @brief Get list of manipulators or other compatible devices.
+ * @brief Get list of compatible devices.
  *        Call to this function attempts to cause fast list update by sending a ping as broadcast
  * @param   hndl      Pointer to session handle
- * @param      size   Size of the device list, number of integers
  * @param[out] devs   Pointer to list of devices found
- *
+ * @param      size   Size of the device list, number of integers
  *
  * This function should be called in this way
  * int devids[20];
@@ -868,6 +887,7 @@ LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
 
 /**
  * @brief Check if device unicast address is known
+ *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
  *
@@ -885,13 +905,14 @@ LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
  *
  * @param   hndl      Pointer to session handle
  * @param   dev       uMs Device ID
- * @param   position  position of the objective 0-X, zero for center position -
+ * @param   position  Position of the objective 0-X, zero for center position -
  *                    nothing seen on microscope, but lens out of way.
- * @param   lift      how much objective is lifted before changing the objective, in µm.
+ * @param   lift      How much objective is lifted before changing the objective, in µm.
  *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
- * @param   dip       dip depth in µm after objective has been changed, 0 to disable,
+ * @param   dip       Dip depth in µm after objective has been changed, 0 to disable,
  *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
  *                    Argument ignored if lift is #LIBUM_ARG_UNDEF.
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
@@ -930,6 +951,7 @@ typedef struct ums_objective_conf_s
  * @param   dev       uMs Device ID
  * @param   obj1      objective 1 configuration in struct #ums_objective_conf
  * @param   obj2      objective 1 configuration in struct #ums_objective_conf
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
@@ -944,6 +966,7 @@ LIBUM_SHARED_EXPORT int ums_set_objective_configuration(um_state *hndl, const in
  * @param   dev       uMs Device ID
  * @param[out] obj1      objective 1 configuration in struct #ums_objective_conf
  * @param[out] obj2      objective 1 configuration in struct #ums_objective_conf
+ *
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
@@ -978,7 +1001,7 @@ typedef struct
  * @param   control pointer to ums_bowl_control struct where control parameters are populated
  * @param   centers an array of bowl center coordinates of ums_bowl_control.count size
  *
- *          ums_bowl_contr control;
+ *          ums_bowl_control control;
  *          ums_bowl_center centers[2]
  *          control.count = 2;
  *          control.  ... // set also other params in the struct
@@ -998,10 +1021,10 @@ LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, cons
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID of UMS
- * @param   control pointer to ums_bowl_control struct where control parameters read from the uMs will be populated
- * @param   centers an array of bowl center coordinates, reserve space for #UMS_BOWL_MAX_COUNT coordinates
+ * @param   control Pointer to ums_bowl_control struct where control parameters read from the uMs will be populated
+ * @param   centers An array of bowl center coordinates, reserve space for #UMS_BOWL_MAX_COUNT coordinates
  *
- *          ums_bowl_contr control;
+ *          ums_bowl_control control;
  *          ums_bowl_center centers[UMS_BOWL_MAX_COUNT]
  *          ret = ums_get_bowl_control(hndl, dev, &control, centers);
  *
@@ -1015,7 +1038,8 @@ LIBUM_SHARED_EXPORT int ums_get_bowl_control(um_state *hndl, const int dev, ums_
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID of UMS
- * @param   control pointer to ums_bowl_control struct where control parameters are populated
+ * @param   control Pointer to ums_bowl_control struct where control parameters are populated
+ *
  * @return  Negative value if an error occurred. 0 if position is unknown or at center, 1-X otherwise.
  */
 
@@ -1058,9 +1082,11 @@ public:
 
     /**
      * @brief Open socket and initialize class state to communicate with manipulators
+     *
      * @param broadcastAddress  UDP target address as a string with traditional IPv4 syntax e.g. "169.254.255.255"
-     * @param timeout           UDP message timeout in milliseconds
+     * @param timeout           UDP timeout in milliseconds
      * @param group             device group, default 0 is group 'A' on TSC
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool open(const char *broadcastAddress = LIBUM_DEF_BCAST_ADDRESS, const unsigned int timeout = LIBUM_DEF_TIMEOUT, const int group = 0)
@@ -1081,6 +1107,7 @@ public:
 
     /**
      * @brief SDK library version
+     *
      * @return Pointer to version string
      */
     static const char *version()
@@ -1088,7 +1115,9 @@ public:
 
     /**
      * @brief Ping device
+     *
      * @param dev   Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool ping(const int dev = LIBUM_USE_LAST_DEV)
@@ -1096,7 +1125,9 @@ public:
 
     /**
      * @brief Check if device is busy
+     *
      * @param dev   Device ID
+     *
      * @return `true` if device is busy, `false` otherwise
      */
     bool busy(const int dev = LIBUM_USE_LAST_DEV)
@@ -1104,7 +1135,9 @@ public:
 
     /**
      * @brief Obtain memory or position drive status
+     *
      * @param   dev     Device ID
+     *
      * @return  Status of the selected uMp or uMs, #LIBUM_POS_DRIVE_COMPLETED,
      *          #LIBUM_POS_DRIVE_BUSY or #LIBUM_POS_DRIVE_FAILED
      */
@@ -1113,18 +1146,25 @@ public:
     {   return um_get_drive_status(_handle, getDev(dev)); }
 
     /**
-     * @brief cmdOptions
-     * Set options for next cmd to be sent to the device.
-     * This is one time set and will be reset after sending the next message.
+     * @brief Set options for the next command to be sent to a manipulator.
+     * This is a one-time setting and will be reset after sending the next command.
      * Can be used to set the trigger for next command (e.g. goto position)
+     *
      * @param   hndl        Pointer to session handle
-     * @param   optionbits  Options bit to set. Use following:
-     *  SMCP1_OPT_WAIT_TRIGGER_1 0x00000200 // Set message to be run when triggered by physical trigger line2
-     *  SMCP1_OPT_PRIORITY       0x00000100 // Prioritizes message to run first. // 0 = normal message
-     *  SMCP1_OPT_REQ_BCAST      0x00000080 // send ACK, RESP or NOTIFY to the bcast address (combine with REQs below), 0 = unicast to the sender
-     *  SMCP1_OPT_REQ_NOTIFY     0x00000040 //request notification (e.g. on completed memory drive), 0 = do not notify
-     *  SMCP1_OPT_REQ_RESP       0x00000020 // request RESP, 0 = no RESP requested
-     *  SMCP1_OPT_REQ_ACK        0x00000010 // request ACK, 0 = no ACK requested
+     * @param   optionbits  Options bit to set. Use the following flag values:
+     *  SMCP1_OPT_WAIT_TRIGGER_1 Set command to be run when triggered by physical trigger line2
+     *  SMCP1_OPT_PRIORITY       Prioritizes command to run first. // 0 = normal command
+     *  SMCP1_OPT_REQ_BCAST      Send ACK, RESP or NOTIFY to the bcast address (combine with REQs below), 0 = unicast to the sender
+     *  SMCP1_OPT_REQ_NOTIFY     Request notification (e.g. on completed memory drive), 0 = do not notify
+     *  SMCP1_OPT_REQ_RESP       Request RESP, 0 = no RESP requested
+     *  SMCP1_OPT_REQ_ACK        Request ACK, 0 = no ACK requested
+     *
+     *  REQ_NOTIFY, REQ_RESP and REQ_ACK are applied automatically for various commands
+     *
+     * This option is applied only to the next command.
+     * Non-zero options are cumulated (bitwise OR'ed).
+     * Call with value zero to reset all options.
+     *
      * @return  returns set flags
      */
     int cmdOptions(const int flags)
@@ -1132,9 +1172,11 @@ public:
 
     /**
      * @brief Read parameter from the device
+     *
      * @param paramId    Parameter id
      * @param[out] value parameter value
      * @param dev        Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool getParam(const int paramId, int *value, const int dev = LIBUM_USE_LAST_DEV)
@@ -1142,9 +1184,11 @@ public:
 
     /**
      * @brief Set parameter to he device
+     *
      * @param paramId   Parameter id
      * @param value     Data to be written
      * @param dev       Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool setParam(const int paramId, const short value, const int dev = LIBUM_USE_LAST_DEV)
@@ -1152,6 +1196,7 @@ public:
 
     /**
      * @brief Get device feature state
+     *
      * @param featureId  feature id
      * @param[out] value value
      * @param dev        Device ID
@@ -1178,9 +1223,11 @@ public:
 
     /**
      * @brief Enable or disable feature
+     *
      * @param featureId  feature id
      * @param state      enable or disable
      * @param dev        Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool setFeature(const int featureId, const bool state, const int dev = LIBUM_USE_LAST_DEV)
@@ -1188,24 +1235,28 @@ public:
 
     /**
      * @brief Enable or disable extended feature
+     *
      * @param featureId  feature id
      * @param state      enable or disable
      * @param dev        Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool setExtFeature(const int featureId, const bool state, const int dev = LIBUM_USE_LAST_DEV)
     {	return  um_set_ext_feature(_handle, getDev(dev), featureId, state) >= 0; }
 
     /**
-     * @brief Obtain the position of actuators.
-     * @param x     Pointer to x-actuator position (may be NULL)
-     * @param y     Pointer to y-actuator position (may be NULL)
-     * @param z     Pointer to z-actuator position (may be NULL)
-     * @param w     Pointer to w-actuator position (may be NULL)
-     * @param dev   Device ID
-     * @param       timeLimit  Timelimit of cache values. If `timeLimit` is 0 then
-     * cached positions are used always. If `timeLimit` is #LIBUM_TIMELIMIT_DISABLED
-     * then positions are always read from uMp or uMs bypassing the cache.
+     * @brief Read device position, possibly from a cache.
+     *
+     * @param[out]  x           Pointer to an allocated buffer for x-actuator position
+     * @param[out]  y           Pointer to an allocated buffer for y-actuator position
+     * @param[out]  z           Pointer to an allocated buffer for z-actuator position
+     * @param[out]  w           Pointer to an allocated buffer for w-actuator position
+     * @param       dev         Device ID
+     * @param       time_limit  Maximum age of acceptable cache value in milliseconds. Pass
+     *                          zero (LIBUM_TIMELIMIT_CACHE_ONLY) to always use cached positions.
+     *                          Pass -1 (LIBUM_TIMELIMIT_DISABLED) to force device read.
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool getPositions(float *x, float *y, float *z, float *w,
@@ -1215,15 +1266,16 @@ public:
 
 
     /**
-     * @brief Move actuators to given position
-     * @param x      Destination position for x-actuator, use #LIBUM_ARG_UNDEF for axis not to be moved
-     * @param y      Destination position for y-actuator in µm
-     * @param z      Destination position for z-actuator
-     * @param w      Destination position for w-actuator
-     * @param speed  Movement speed in µm/s(0 to use default value)
-     * @param dev    Device ID (#LIBUM_USE_LAST_DEV to use selected one)
-     * @param allAxisSimultaneously Drive mode (default one-by-one)
-     * @param max_acc Maximum acceleration in µm/s^2, give value zero to use default
+     * @brief Drive uMp or uMs to the specified position.
+     *
+     * @param dev         Device ID
+     * @param x           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+     * @param y           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+     * @param z           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+     * @param w           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+     * @param speed       Speed in µm/s
+     * @param allAxisSimultaneously Drive mode. Defaults to one axis at a time.
+     * @param max_acc     Maximum acceleration in µm/s^2
      *
      * @return `true` if operation was successful, `false` otherwise
      */
@@ -1235,7 +1287,9 @@ public:
 
     /**
      * @brief Stop device - typically movement, but also uMc calibration
+     *
      * @param dev   Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool stop(const int dev = LIBUM_USE_LAST_DEV)
@@ -1243,6 +1297,7 @@ public:
 
     /**
      * @brief Get the latest error code
+     *
      * @return #um_error error code
      */
     um_error lastError()
@@ -1250,6 +1305,7 @@ public:
 
     /**
      * @brief Get the latest error description
+     *
      * @return Pointer to error description
      */
     const char *lastErrorText()
@@ -1257,9 +1313,11 @@ public:
 
     /**
      * @brief Get device firmware version
+     *
      * @param[out] version  Pointer to an allocated buffer for firmware version numbers
-     * @param      size     Size of the above buffer (number of integers)
+     * @param      size     Size of the above buffer (number of integers). 5 should be sufficient.
      * @param      dev      Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool readVersion(int *version, const int size, const int dev = LIBUM_USE_LAST_DEV)
@@ -1270,13 +1328,15 @@ public:
      *
      * @param[out] devs   Pointer to list of devices found
      * @param      size     Size of the above buffer (number of integers)
+     *
      * @return number of found devices
      */
     int getDeviceList(int *devs = NULL, const int size = 0)
     {   return um_get_device_list(_handle, devs, size); }
 
     /**
-      * @brief Clear above device list
+      * @brief Clear above device list from internal caches.
+      *
       * @return `true` if operation was successful, `false` otherwise
       */
     bool clearDeviceList()
@@ -1284,7 +1344,9 @@ public:
 
     /**
      * @brief Get uMp or uMs axis count
+     *
      * @param      dev      Device ID
+     *
      * @return  Negative value if an error occurred. Axis count otherwise
      */
     int getAxisCount(const int dev = LIBUM_USE_LAST_DEV)
@@ -1292,9 +1354,11 @@ public:
 
     /**
      * @brief Take a step (relative movement from current position)
+     *
      * @param   x,y,z,d  step length (in µm), negative value for backward, zero for axis not to be moved
      * @param   speed    movement speed in µm/s for all axis, zero to use default value
      * @param   dev      Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool takeStep(const float x, const float y = 0, const float z = 0, const float d = 0,
@@ -1304,6 +1368,7 @@ public:
 
     /**
      * @brief Take a step (relative movement from current position) with separate speed for every axis
+     *
      * @param   step_x   step length (in µm) for X axis negative value for backward, zero for axis not to be moved
      * @param   step_y   step length (in µm) for Y axis negative value for backward, zero for axis not to be moved
      * @param   step_z   step length (in µm) for Z axis negative value for backward, zero for axis not to be moved
@@ -1315,6 +1380,7 @@ public:
      * @param   mode     (CLS or microstepping resolution) mode
      * @param   max_acceleration
      * @param   dev      Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool takeStep(const int step_x, const int step_y, const int step_z, const int step_d,
@@ -1327,8 +1393,10 @@ public:
 
      /**
      * @brief uMp LED control
+     *
      * @param disable  true to turn all manipulator LEDs off, false to restore normal operation
      * @param dev      Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
      bool umpLEDcontrol(const bool disable, const int dev = LIBUM_USE_LAST_DEV)
@@ -1336,23 +1404,29 @@ public:
 
 
      /**
-     * @brief uMs set lens position
-     * @param position 1 or 2
-     * @param dev      Device ID
-     * @param lift     how much objective is lifted before changing the objective, in µm.
-     *                 default #LIBUM_ARG_UNDEF to use value stored in uMs eeprom (recommended).
-     * @param dip      dip depth in µm after objective has been changed, 0 to disable,
-     *                 default #LIBUM_ARG_UNDEF to use value stored in uMs eeprom (recommended).
-     *                 Argument ignored if lift is #LIBUM_ARG_UNDEF.
-     * @return `true`  if operation was successful, `false` otherwise
-     */
+      * @brief Set lens changer position
+      *
+      * @param   position  Position of the objective 0-X, zero for center position -
+      *                    nothing seen on microscope, but lens out of way.
+      * @param   dev       uMs Device ID
+      * @param   lift      How much objective is lifted before changing the objective, in µm.
+      *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
+      * @param   dip       Dip depth in µm after objective has been changed, 0 to disable,
+      *                    #LIBUM_ARG_UNDEF to use default value stored in uMs eeprom.
+      *                    Argument ignored if lift is #LIBUM_ARG_UNDEF.
+      *
+      *
+      * @return `true`  if operation was successful, `false` otherwise
+      */
      bool umsSetLensPosition(const int position, const int dev = LIBUM_USE_LAST_DEV,
                              const float lift = LIBUM_ARG_UNDEF, const float dip = LIBUM_ARG_UNDEF)
      {  return ums_set_lens_position(_handle, getDev(dev), position, lift, dip) >= 0; }
 
      /**
      * @brief uMs get lens position
+     *
      * @param dev      Device ID
+     *
      * @return 1 or 2, 0 if position is unknown and negative for an error
      */
      int umsGetLensPosition(const int dev = LIBUM_USE_LAST_DEV)
@@ -1360,29 +1434,35 @@ public:
 
     /**
      * @brief Set pressure
+     *
      * @param channel  1-8
-     * @param value    pressure value in kPa
+     * @param value    Pressure value in kPa
      * @param dev      Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool umcSetPressure(const int channel, const float value, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_set_pressure_setting(_handle, getDev(dev), channel, value) >= 0; }
 
     /**
-     * @brief Get pressure setting
-     * @param channel  1-8
-     * @param[out]     Pressure in kPa
-     * @param dev      Device ID
+     * @brief Get the currently expected pressure (may differ from measurement)
+     *
+     * @param   channel   Pressure channel, valid values 1-8
+     * @param[out] value  Pointer to an allocated variable, will get pressure setting in kPa, may be negative
+     * @param   dev       Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool umcGetPressure(const int channel, float *value, const int dev = LIBUM_USE_LAST_DEV)
     {	return umc_get_pressure_setting(_handle, getDev(dev), channel, value) >= 0; }
 
     /**
-     * @brief Measure pressure
-     * @param channel  1-8
-     * @param[out]     Pressure in kPa
-     * @param dev      Device ID
+     * @brief Measure real pressure on output manifold
+     *
+     * @param   channel   Pressure channel, valid values 1-8
+     * @param[out] value  Pointer to an allocated variable, will get pressure in kPa, may be negative
+     * @param   dev       Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool umcMeasurePressure(const int channel, float *value, const int dev = LIBUM_USE_LAST_DEV)
@@ -1390,9 +1470,11 @@ public:
 
     /**
      * @brief Set valve
+     *
      * @param channel  1-8
      * @param state    true or false
      * @param dev      Device ID
+     *
      * @return `true` if operation was successful, `false` otherwise
      */
     bool umcSetValve(const int channel, const bool state, const int dev = LIBUM_USE_LAST_DEV)
@@ -1400,8 +1482,10 @@ public:
 
     /**
      * @brief Get valve state
+     *
      * @param channel  1-8
      * @param dev      Device ID
+     *
      * @return negative if an error occurred, valve state 0 or 1 otherwise
      */
 
@@ -1409,16 +1493,17 @@ public:
     {	return umc_get_valve(_handle, getDev(dev), channel); }
 
     /**
-    * @brief Reset/calibrate fluid detector.
-    * This function should be called if tube has been replaced or remounted to the detector after cleaning.
-    * First uMc units had a separate control line for each channel. Later ones has a shared line for all channels.
-    *
-    * Fluid detector is an optional accessory.
-    *
-    * @param   channel   Pressure channel, valid values 1-8
-    * @param   dev       Device ID
-    * @return `true` if operation was successful, `false` otherwise
-    */
+     * @brief Reset/calibrate fluid detector.
+     * This function should be called if tube has been replaced or remounted to the detector after cleaning.
+     * First uMc units had a separate control line for each channel. Later ones has a shared line for all channels.
+     *
+     * Fluid detector is an optional accessory.
+     *
+     * @param   channel   Pressure channel, valid values 1-8
+     * @param   dev       Device ID
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
 
     bool umcResetFluidDetector(const int channel = 1, const int dev = LIBUM_USE_LAST_DEV)
     {   return umc_reset_fluid_detector(_handle, getDev(dev), channel); }
@@ -1427,6 +1512,7 @@ public:
      * @brief Get state of fluid detectors
      *
      * @param dev      Device ID
+     *
      * @return negative if an error occurred, detector state otherwise
      */
 
@@ -1434,9 +1520,11 @@ public:
     {   return umc_read_fluid_detectors(_handle, getDev(dev)); }
 
     /**
-     * @brief Pressure calibration
+     * @brief Start the pressure calibration sequence. This returns quickly, while the automated
+     * calibration itself takes many minutes. The device will not report itself as being busy
+     * to #um_is_busy during this process.
      *
-     * @param   channeln  Pressure channel 1-8, 0 for all channels
+     * @param   channel   Pressure channel 1-8, 0 for all channels
      * @param   delay     Delay between setting and measuring pressure in ms, set to zero to use default value.
      * @param   dev       Device ID
      *
