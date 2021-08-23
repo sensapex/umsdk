@@ -990,7 +990,7 @@ typedef struct
     float objective_od;  /** objective outer diameter in µm */
     float bowl_id;       /** bowl inner diameter in µm */
     float z_limit_low;   /** max safe focus position where XY stage can be moved to any position in µm */
-    float z_limit_height; /** max safe focus position before objective is touching the bottom of the bowl in µm */
+    float z_limit_high;  /** max safe focus position before objective is touching the bottom of the bowl in µm */
 } ums_bowl_control;
 
 /**

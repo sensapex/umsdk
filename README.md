@@ -29,6 +29,9 @@ sudo make -f Makefile.osx install
 Precompiled windows binaries can be found in
 http://dist.sensapex.com/misc/um-sdk/latest/
 
+All subdirectories under src/ contain qmake project (.pro) files.
+There are also visual studio solution and project files under src/lib/windows/ .
+
 ### Documentation
 
 Generate doxygen documentation and examine doc/html/index.html for details. There is a sample
