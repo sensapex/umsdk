@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.034"
+#define LIBUM_VERSION_STR    "v1.035"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -821,7 +821,7 @@ int um_goto_position(um_state *hndl, const int dev, const float x, const float y
         return set_last_error(hndl, LIBUM_INVALID_DEV);
     if(um_invalid_pos(x) || um_invalid_pos(y) || um_invalid_pos(z) || um_invalid_pos(d))
         return set_last_error(hndl, LIBUM_INVALID_ARG);
-    if(speed <= 0.0)
+    if(speed < 0.0)
         return set_last_error(hndl, LIBUM_INVALID_ARG);
 
     args[argc++] = um_arg_undef(x) ? SMCP1_ARG_UNDEF:um2nm(x);
