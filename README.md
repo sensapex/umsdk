@@ -1,6 +1,6 @@
 # umsdk
 
-SDK for Sensapex uMx devices (Beta).
+SDK for Sensapex uMx devices.
 
 * uMp - Micromanipulators
 * uMs - Microscope motorization
@@ -8,20 +8,30 @@ SDK for Sensapex uMx devices (Beta).
 
 ### Installation
 
-#### Linux
+#### Linux and MacOS
+
+Build and install umsdk with example projects.
 
 ```
-cd src/lib
-make -f Makefile.linux
-sudo make -f Makefile.linux install
+cd scripts
+./build.sh
 ```
 
-#### MacOS
+Install umlib in your system
 
 ```
-cd src/lib
-make -f Makefile.osx
-sudo make -f Makefile.osx install
+cd scripts
+sudo ./install.sh
+```
+
+Example applications and libum can be found from build directory.
+
+Eg. Run 'sample'-application
+
+```
+cd build/sample
+./sample
+
 ```
 
 #### Windows
@@ -29,18 +39,17 @@ sudo make -f Makefile.osx install
 Precompiled windows binaries can be found in
 http://dist.sensapex.com/misc/um-sdk/latest/
 
-All subdirectories under src/ contain qmake project (.pro) files.
-There are also visual studio solution and project files under src/lib/windows/ .
-
 ### Documentation
 
 Generate doxygen documentation and examine doc/html/index.html for details. There is a sample
-application in src/sample/ . and precompiled Doxygen documentation in
+application in examples/sample/ . and precompiled Doxygen documentation in
 http://dist.sensapex.com/misc/um-sdk/latest/doc/ .
 
 ### Changelog
 
 umsdk is new major development branch that is based on the legacy ump-sdk. Main differences are:
+
+- Support form CMake
 
 - function names are changed from `ump_foo_bar` to `um_foo_bar` if function is usable for multiple
   type of Sensapex devices i.e. not only manipulators (uMp).
