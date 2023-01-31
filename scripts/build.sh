@@ -12,6 +12,6 @@ mkdir -p ${BUILD_DIR_PATH}
 
 cd ${BUILD_DIR_PATH}
 
-cmake --fresh -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${PROJECT_ROOT_PATH}
+cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${PROJECT_ROOT_PATH}
 make clean
 make
