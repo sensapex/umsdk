@@ -40,7 +40,10 @@
 #  include <ws2tcpip.h>
 #  include <windows.h>
 #  include <math.h>
-#  define SOCKOPT_CAST   (char *)           /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
+#  ifndef EADDRINUSE
+#    define EADDRINUSE    WSAEADDRINUSE     /**< cross platform trick, EADDRINUSE is not defined in windows */
+#  endif
+#  define SOCKOPT_CAST    (char *)          /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
 #  define socklen_t       int               /**< cross platform trick, socklen_t is not defined in windows */
 #  define size_t          int               /**< cross platform trick, winsock use int instead of size_t e.g. in recvfrom */
 #  define sscanf          sscanf_s          /**< cross platform trick, get rid of unsafe compiler error */
