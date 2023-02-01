@@ -1,7 +1,7 @@
 /*
  * A sample C-program for Sensapex micromanipulator SDK (umpsdk)
  *
- * Copyright (c) 2016-2020, Sensapex Oy
+ * Copyright (c) 2016-2023, Sensapex Oy
  * All rights reserved.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
@@ -271,7 +271,7 @@ void parse_args(int argc, char *argv[], params_struct *params)
 }
 
 #if defined(_WINDOWS) || (defined(__APPLE__) && defined(__MACH__))
-static bool isnanf(const float arg)
+static int isnanf(const float arg)
 {
     return isnan(arg);
 }

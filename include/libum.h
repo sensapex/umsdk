@@ -1,9 +1,9 @@
 /**
  * @file    libum.h
  * @author  Sensapex <support@sensapex.com>
- * @date    29 May 2020
+ * @date    1 Feb 2023
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
- * @copyright   Copyright (c) 2016-2021 Sensapex. All rights reserved
+ * @copyright   Copyright (c) 2016-2023 Sensapex. All rights reserved
  *
  * The Sensapex uM product family SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
@@ -46,7 +46,6 @@
 #  define SOCKOPT_CAST    (char *)          /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
 #  define socklen_t       int               /**< cross platform trick, socklen_t is not defined in windows */
 #  define size_t          int               /**< cross platform trick, winsock use int instead of size_t e.g. in recvfrom */
-#  define sscanf          sscanf_s          /**< cross platform trick, get rid of unsafe compiler error */
 #  define getLastError()  WSAGetLastError() /**< cross platform trick, using winsocket function instead of errno */
 #  define timeoutError    WSAETIMEDOUT      /**< cross platform trick, detect timeout with winsocket error number */
 typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
