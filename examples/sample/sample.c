@@ -26,7 +26,7 @@
 #include <stdbool.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.122"
+#define VERSION_STR   "v0.123"
 #define COPYRIGHT "Copyright (c) Sensapex. All rights reserved"
 
 #define DEV     1

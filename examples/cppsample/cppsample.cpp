@@ -26,8 +26,8 @@
 #include <stdbool.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.123"
-#define COPYRIGHT "Copyright (c) Sensapex 2020-2021. All rights reserved"
+#define VERSION_STR   "v0.124"
+#define COPYRIGHT "Copyright (c) Sensapex 2020-2023. All rights reserved"
 
 #define DEV     1
 #define UPDATE  100
@@ -273,7 +273,7 @@ void parse_args(int argc, char *argv[], Params &params)
     }
 }
 
-#if defined(_WINDOWS) || (defined(__APPLE__) && defined(__MACH__))
+#if (defined(__APPLE__) && defined(__MACH__))
 static int isnanf(const float arg)
 {
     return isnan(arg);

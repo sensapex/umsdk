@@ -2,7 +2,7 @@
  * A software development kit for Sensapex 2015 series Micromanipulators,
  * Microscope stage and Pressure controller
  *
- * Copyright (c) 2015-2021, Sensapex Oy
+ * Copyright (c) 2015-2023, Sensapex Oy
  * All rights reserved.
  *
  * This file is part of 2015 series Sensapex uMx device SDK
@@ -36,8 +36,8 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.035"
-#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
+#define LIBUM_VERSION_STR    "v1.036"
+#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2023. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
 #define LIBUM_ANY_IPV4_ADDR  "0.0.0.0"
