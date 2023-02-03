@@ -273,7 +273,7 @@ void parse_args(int argc, char *argv[], Params &params)
     }
 }
 
-#if (defined(WIN32) && !defined(WIN64))
+#if ((defined(WIN32) && !defined(WIN64)) || defined(__APPLE__))
 static int isnanf(const float arg)
 {
     return isnan(arg);
