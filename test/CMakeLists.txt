@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(my_project)
+project(libum_test)
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -13,16 +13,18 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Actual test
+# Actual tests
 enable_testing()
 
 add_executable(
     libum_test
     libum_test.cpp
 )
-target_link_libraries(
-    libum_test
-    GTest::gtest_main
+
+target_link_libraries(libum_test
+    PRIVATE
+        GTest::gtest_main
+        um
 )
 
 include(GoogleTest)

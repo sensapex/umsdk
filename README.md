@@ -17,7 +17,7 @@ cd scripts
 ./build.sh
 ```
 
-Install umlib in your system
+Install umlib in your system (Linux)
 
 ```
 cd scripts
@@ -36,8 +36,34 @@ cd build/sample
 
 #### Windows
 
+Build umsdk with example projects.
+
+```
+cd scripts
+build-mingw.bat
+```
+
 Precompiled windows binaries can be found in
 http://dist.sensapex.com/misc/um-sdk/latest/
+
+### Testing
+
+Build umlib
+
+```
+cd scripts
+./build.sh
+```
+
+Build and run tests
+
+```
+cd test
+mkdir build
+cd build
+make
+make test
+```
 
 ### Documentation
 
