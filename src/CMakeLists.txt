@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(
     libum
-    VERSION 1.035
-    DESCRIPTION "Sensapex um-libraury"
-    LANGUAGES C
+    DESCRIPTION "Sensapex um-library"
+    LANGUAGES C CXX
     )
 
 # Build type definitions. Use Release by default.
