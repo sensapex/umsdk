@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
 project(libum_test_project)
 
+# Build type definitions. Use Release by default.
+if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
 # Available since cmake 3.24
 if (POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
@@ -40,7 +45,7 @@ target_include_directories(libum_test PRIVATE ${UM_INC})
 # Find and set the library under testing (libum)
 find_library(UM_LIB NAMES um
     PATHS
-        ${PROJECT_SOURCE_DIR}/../build/src  # Local build
+        ${PROJECT_SOURCE_DIR}/../build-${CMAKE_BUILD_TYPE}/src  # Local build
         ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} # System installed
 )
 target_link_libraries(libum_test
