@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.036"
+#define LIBUM_VERSION_STR    "v1.400"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2023. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502

@@ -18,12 +18,13 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Find the library under testing (libum)
-find_library(UM_LIB NAMES um
+# Set include folder
+find_path(UM_INC
+    NAMES libum.h
     PATHS
-        ${PROJECT_SOURCE_DIR}/../build/src  # Local build
-        ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} # System installed
-        )
+       ${PROJECT_SOURCE_DIR}/../include  # Local build
+)
+message(STATUS "UM_INC => ${UM_INC}")
 
 # Actual tests
 enable_testing()
@@ -33,6 +34,15 @@ add_executable(
     libum_test.cpp
 )
 
+# Set include dirs
+target_include_directories(libum_test PRIVATE ${UM_INC})
+
+# Find and set the library under testing (libum)
+find_library(UM_LIB NAMES um
+    PATHS
+        ${PROJECT_SOURCE_DIR}/../build/src  # Local build
+        ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} # System installed
+)
 target_link_libraries(libum_test
     PRIVATE
         GTest::gtest_main
