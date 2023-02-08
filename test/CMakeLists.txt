@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
-project(libum_test_project)
+project(libum_test_project
+        LANGUAGES C CXX)
 
 # Build type definitions. Use Release by default.
 if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
@@ -36,7 +37,8 @@ enable_testing()
 
 add_executable(
     libum_test
-    libum_test.cpp
+    libum_c_test.cpp
+    libum_cpp_test.cpp
 )
 
 # Set include dirs

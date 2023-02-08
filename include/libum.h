@@ -1167,7 +1167,7 @@ public:
      * Non-zero options are cumulated (bitwise OR'ed).
      * Call with value zero to reset all options.
      *
-     * @return  returns set flags
+     * @return  returns set flags if operation was successful, #um_error otherwise
      */
     int cmdOptions(const int flags)
     {  return um_cmd_options(_handle, flags); }
