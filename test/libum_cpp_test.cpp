@@ -3,31 +3,30 @@
 #include <smcp1.h>
 
 
-class LibUmTest : public ::testing::Test {
+class LibumTestCpp : public ::testing::Test {
 
     protected:
         void SetUp() override {
-            umObj = new LibUm();
+            mUmObj = new LibUm();
         }
         void TearDown() override {
-            if (umObj->isOpen()) {
-                umObj->close();
-            }
+            delete mUmObj;
+            mUmObj = NULL;
         }
     protected:
-        LibUm * umObj;
+        LibUm * mUmObj;
 };
 
-TEST_F(LibUmTest, test_um_init) {
-    EXPECT_NE(umObj, nullptr);
-    EXPECT_FALSE(umObj->isOpen());
+TEST_F(LibumTestCpp, test_um_init) {
+    EXPECT_NE(mUmObj, nullptr);
+    EXPECT_FALSE(mUmObj->isOpen());
 }
 
-TEST_F(LibUmTest, test_version) {
-    EXPECT_STREQ("v1.400", umObj->version());
+TEST_F(LibumTestCpp, test_version) {
+    EXPECT_STREQ("v1.400", mUmObj->version());
 }
 
-TEST_F(LibUmTest, test_cmdOptions) {
+TEST_F(LibumTestCpp, test_cmdOptions) {
     int options = (
         SMCP1_OPT_WAIT_TRIGGER_1 |
         SMCP1_OPT_PRIORITY |
@@ -38,13 +37,13 @@ TEST_F(LibUmTest, test_cmdOptions) {
     );
 
     // Successful cases
-    EXPECT_TRUE(umObj->open());
-    EXPECT_EQ(0, umObj->cmdOptions(0));
-    EXPECT_EQ(options, umObj->cmdOptions(options));
+    EXPECT_TRUE(mUmObj->open());
+    EXPECT_EQ(0, mUmObj->cmdOptions(0));
+    EXPECT_EQ(options, mUmObj->cmdOptions(options));
     // Failure cases
-    umObj->close();
-    EXPECT_EQ(um_error::LIBUM_NOT_OPEN, umObj->cmdOptions(0));
-    EXPECT_EQ(um_error::LIBUM_NOT_OPEN, umObj->lastError());
+    mUmObj->close();
+    EXPECT_EQ(um_error::LIBUM_NOT_OPEN, mUmObj->cmdOptions(0));
+    EXPECT_EQ(um_error::LIBUM_NOT_OPEN, mUmObj->lastError());
 }
 
 int main(int argc, char **argv) {

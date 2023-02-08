@@ -1,26 +1,14 @@
 #include <gtest/gtest.h>
 #include <libum.h>
 
-TEST(libumTest, test_um_get_version)
+TEST(LibumTestC, test_um_get_version)
 {
     const char *version = um_get_version();
     // Expect two strings not to be equal.
     EXPECT_STREQ("v1.400", version);
 }
 
-TEST(libumTest, um_open)
-{
-    um_state *umHandle = um_open("INVALID-IP", 100, 0);
-    EXPECT_EQ(NULL, umHandle);
-    umHandle = um_open(LIBUM_DEF_BCAST_ADDRESS, 100, 0);
-    EXPECT_NE(nullptr, umHandle);
-    if (umHandle) {
-        um_close(umHandle);
-        umHandle = NULL;
-    }
-}
-
-TEST(libumTest, test_um_get_timestamp_us)
+TEST(LibumTestC, test_um_get_timestamp_us)
 {
     struct timespec tms;
 
@@ -36,7 +24,7 @@ TEST(libumTest, test_um_get_timestamp_us)
     EXPECT_EQ(sys_epoch, result);
 }
 
-TEST(libumTest, test_um_errorstr)
+TEST(LibumTestC, test_um_errorstr)
 {
     for (int error_code = -10; error_code <= 0; error_code++)
     {
@@ -69,5 +57,18 @@ TEST(libumTest, test_um_errorstr)
             EXPECT_STREQ("Unknown error", error_str);
             break;
         }
+    }
+}
+
+TEST(LibumTestC, um_open)
+{
+    um_state *umHandle = um_open("INVALID-IP", 100, 0);
+    EXPECT_EQ(NULL, umHandle);
+
+    umHandle = um_open(LIBUM_DEF_BCAST_ADDRESS, 100, 0);
+    EXPECT_NE(nullptr, umHandle);
+    if (umHandle) {
+        um_close(umHandle);
+        umHandle = NULL;
     }
 }
