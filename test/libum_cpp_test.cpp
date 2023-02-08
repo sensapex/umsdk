@@ -27,6 +27,30 @@ namespace {
         EXPECT_STREQ("v1.400", mUmObj->version());
     }
 
+    TEST_F(LibumTestCpp, test_open_isOpen_close) {
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_TRUE(mUmObj->isOpen());
+        mUmObj->close();
+        EXPECT_FALSE(mUmObj->isOpen());
+
+        // Multiple open
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_TRUE(mUmObj->isOpen());
+        // Seconds open fails...
+        EXPECT_FALSE(mUmObj->open());
+        // ... but existing connection remains open.
+        EXPECT_TRUE(mUmObj->isOpen());
+        mUmObj->close();
+        EXPECT_FALSE(mUmObj->isOpen());
+
+        // Multiple close
+        EXPECT_TRUE(mUmObj->open());
+        mUmObj->close();
+        EXPECT_FALSE(mUmObj->isOpen());
+        mUmObj->close();
+        EXPECT_FALSE(mUmObj->isOpen());
+    }
+
     TEST_F(LibumTestCpp, test_cmdOptions) {
         int options = (
             SMCP1_OPT_WAIT_TRIGGER_1 |
