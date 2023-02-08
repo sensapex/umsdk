@@ -1092,8 +1092,15 @@ public:
      * @return `true` if operation was successful, `false` otherwise
      */
     bool open(const char *broadcastAddress = LIBUM_DEF_BCAST_ADDRESS, const unsigned int timeout = LIBUM_DEF_TIMEOUT, const int group = 0)
-    {	return (_handle = um_open(broadcastAddress, timeout, group)) != NULL; }
-
+    {
+        if (!_handle) {
+            return (_handle = um_open(broadcastAddress, timeout, group)) != NULL;
+        } else {
+            _handle->last_error = LIBUM_NOT_OPEN;
+            strcpy(_handle->errorstr_buffer, "Communication socket not open");
+            return false;
+        }
+    }
     /**
      * @brief Check if socket is open for device communication
      * @return `true` if this instance of `LibUm` holds an open UDP socket.
