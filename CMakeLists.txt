@@ -7,4 +7,5 @@ project(
     )
 
 add_subdirectory(src) #umlib
-add_subdirectory(examples) #Example applications
+#add_subdirectory(examples) #Example applications
+add_subdirectory(test) #Example applications

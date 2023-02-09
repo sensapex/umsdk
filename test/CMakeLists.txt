@@ -48,13 +48,16 @@ target_include_directories(libum_test PRIVATE ${UM_INC})
 # Find and set the library under testing (libum)
 find_library(UM_LIB NAMES um
     PATHS
+        ${PROJECT_SOURCE_DIR}/../src/build  # Local coverage build (just for testing)
         ${PROJECT_SOURCE_DIR}/../build-${CMAKE_BUILD_TYPE}/src  # Local build
         ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} # System installed
 )
+link_directories(${PROJECT_SOURCE_DIR}/../../build/src)
+
 target_link_libraries(libum_test
     PRIVATE
         GTest::gtest_main
-        ${UM_LIB}
+        um
 )
 
 include(GoogleTest)
