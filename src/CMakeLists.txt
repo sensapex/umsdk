@@ -6,6 +6,7 @@ project(
     LANGUAGES C CXX
     )
 
+
 # Build type definitions. Use Release by default.
 if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)

@@ -12,14 +12,14 @@ SDK for Sensapex uMx devices.
 
 Build and install umsdk with example projects.
 
-```
+``` bash
 cd scripts
 ./build.sh
 ```
 
 Install umlib in your system (Linux)
 
-```
+``` bash
 cd scripts
 sudo ./install.sh
 ```
@@ -28,7 +28,7 @@ Example applications and libum can be found from build directory.
 
 Eg. Run 'sample'-application
 
-```
+``` bash
 cd build/sample
 ./sample
 
@@ -38,7 +38,7 @@ cd build/sample
 
 Build umsdk with example projects.
 
-```
+``` powershell
 cd scripts
 build-mingw.bat
 ```
@@ -48,22 +48,7 @@ http://dist.sensapex.com/misc/um-sdk/latest/
 
 ### Testing
 
-Build umlib
-
-```
-cd scripts
-./build.sh
-```
-
-Build and run tests
-
-```
-cd test
-mkdir build
-cd build
-make
-make test
-```
+[Please see](test/README.md)
 
 ### Documentation
 
