@@ -29,7 +29,7 @@ Example applications and libum can be found from build directory.
 Eg. Run 'sample'-application
 
 ``` bash
-cd build/sample
+cd build-Release/sample
 ./sample
 
 ```
@@ -48,7 +48,22 @@ http://dist.sensapex.com/misc/um-sdk/latest/
 
 ### Testing
 
-[Please see](test/README.md)
+[Please see the documentation and instructions](test/README.md)
+
+### Crosscompile for windows
+
+* Install `mingw-w64`-toolchain. Please see [the instructions for installation](https://www.mingw-w64.org/) 
+* Run `scripts/cc-mingw-w64.sh` -shell script (linux):
+
+``` bash
+scripts/cc-mingw-w64.sh
+```
+
+Crosscompiled Windows binaries can be found:
+
+`build-mingw-i686-Release` (for 32 bit Windows) <br>
+`build-mingw-x64-Release` (for 64 bit Windows)
+
 
 ### Documentation
 

@@ -39,7 +39,6 @@
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 #  include <windows.h>
-#  include <math.h>
 #  ifndef EADDRINUSE
 #    define EADDRINUSE    WSAEADDRINUSE     /**< cross platform trick, EADDRINUSE is not defined in windows */
 #  endif
@@ -62,7 +61,6 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 # endif
 #else // !_WINDOWS
 # include <unistd.h>
-# include <math.h>
 # include <arpa/inet.h>
 # include <sys/errno.h>
 typedef int SOCKET;                         /**< cross platform trick, int instead of SOCKET (defined by winsock) in posix systems */
@@ -75,6 +73,9 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 # define SOCKOPT_CAST                       /**< cross platform trick, non-standard typecast not needed in posix systems */
 # define LIBUM_SHARED_EXPORT                /**< cross platform trick, declspec for windows DLL, empty for posix systems */
 #endif
+
+#include <string.h>
+#include <math.h>
 
 #ifdef _WINDOWS
 # ifndef LIBUM_SHARED_DO_NOT_EXPORT
