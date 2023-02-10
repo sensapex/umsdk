@@ -15,7 +15,7 @@ cmake .. -DENABLE_COVERAGE=true && cmake --build .
 
 # Run the test application and collect code coverage data
 # The html report can be found "build/coverage/index.html"
-./libum_test && cmake --build . --target=coverage
+./libum_test && cmake --build . --target coverage
 
 cd coverage
 echo "Code coverage report: file://$(pwd)/index.html"
