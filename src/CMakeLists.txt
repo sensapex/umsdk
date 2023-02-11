@@ -17,8 +17,10 @@ endif()
 #set(CMAKE_C_FLAGS_RELEASE "-O1" CACHE STRING "" FORCE)
 add_compile_options(-DLIBUM_LIBRARY)
 
-# Compile Universal binary for MacOS
-set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+# Compile an Universal binary for MacOS (when not running code coverage build)
+if (NOT ENABLE_COVERAGE)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/../include)
 
