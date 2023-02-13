@@ -115,6 +115,17 @@ namespace {
                   LIBUM_INVALID_DEV == mUmObj->lastError());
     }
 
+    TEST_F(LibumTestUmpCpp, test_readVersion) {
+        const int versionBufSize = 5;
+        EXPECT_TRUE(mUmObj->open());
+        int versionBuf[versionBufSize] = {-1};
+        EXPECT_TRUE(mUmObj->readVersion(versionBuf, versionBufSize, umId));
+
+        for (int i = 0; i < versionBufSize; i++) {
+            EXPECT_EQ(-1, versionBuf[i]) << "i=" << i;
+        }
+    }
+
     // Main
     int main(int argc, char **argv) {
         ::testing::InitGoogleTest(&argc, argv);
