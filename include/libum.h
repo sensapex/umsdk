@@ -1569,10 +1569,10 @@ public:
      *                          May be NULL if setting only verbose level for internal log print out to stderr
      * @param   arg             Pointer argument to be looped to the above function may be e.g. a typecasted
      *                          file handle, optional, may be NULL
-     * @return  Negative value if an error occurred. Zero or positive value otherwise
+     * @return  `true` if operation was successful, `false` otherwise
      */
     bool setLogCallback(const int verbose_level, um_log_print_func func, const void *arg)
-    {	return um_set_log_func(_handle, verbose_level, func, arg); }
+    {	return um_set_log_func(_handle, verbose_level, func, arg) >= 0 ? true : false; }
 
     /**
      * @brief Process incoming messages (may update status or location cache)
