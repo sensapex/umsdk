@@ -4,7 +4,8 @@
 
 
 namespace {
-    class LibumTestCpp : public ::testing::Test {
+    // Basic Cpp tests
+    class LibumTestBasicCpp : public ::testing::Test {
 
         protected:
             void SetUp() override {
@@ -18,16 +19,16 @@ namespace {
             LibUm * mUmObj;
     };
 
-    TEST_F(LibumTestCpp, test_um_init) {
+    TEST_F(LibumTestBasicCpp, test_um_init) {
         EXPECT_NE(mUmObj, nullptr);
         EXPECT_FALSE(mUmObj->isOpen());
     }
 
-    TEST_F(LibumTestCpp, test_version) {
+    TEST_F(LibumTestBasicCpp, test_version) {
         EXPECT_STREQ("v1.400", mUmObj->version());
     }
 
-    TEST_F(LibumTestCpp, test_open_isOpen_close) {
+    TEST_F(LibumTestBasicCpp, test_open_isOpen_close) {
         EXPECT_TRUE(mUmObj->open());
         EXPECT_TRUE(mUmObj->isOpen());
         mUmObj->close();
@@ -51,7 +52,7 @@ namespace {
         EXPECT_FALSE(mUmObj->isOpen());
     }
 
-    TEST_F(LibumTestCpp, test_cmdOptions) {
+    TEST_F(LibumTestBasicCpp, test_cmdOptions) {
         int options = (
             SMCP1_OPT_WAIT_TRIGGER_1 |
             SMCP1_OPT_PRIORITY |
@@ -71,7 +72,7 @@ namespace {
         EXPECT_EQ(um_error::LIBUM_NOT_OPEN, mUmObj->lastError());
     }
 
-    TEST_F(LibumTestCpp, test_lastError) {
+    TEST_F(LibumTestBasicCpp, test_lastError) {
         EXPECT_EQ(LIBUM_NOT_OPEN, mUmObj->lastError());
         EXPECT_TRUE(mUmObj->open());
         EXPECT_EQ(LIBUM_NO_ERROR, mUmObj->lastError());
@@ -79,6 +80,18 @@ namespace {
         EXPECT_EQ(LIBUM_NOT_OPEN, mUmObj->lastError());
     }
 
+    // uMp spesific tests
+    class LibumTestUmpCpp : public LibumTestBasicCpp {
+        protected:
+            int umId = 1;
+    };
+
+    TEST_F(LibumTestUmpCpp, test_ping) {
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_TRUE(mUmObj->ping(umId));
+    }
+
+    // Main
     int main(int argc, char **argv) {
         ::testing::InitGoogleTest(&argc, argv);
         return RUN_ALL_TESTS();

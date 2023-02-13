@@ -2,14 +2,14 @@
 #include <libum.h>
 
 namespace {
-    TEST(LibumTestC, test_um_get_version)
+    TEST(LibumTestBasicC, test_um_get_version)
     {
         const char *version = um_get_version();
         // Expect two strings not to be equal.
         EXPECT_STREQ("v1.400", version);
     }
 
-    TEST(LibumTestC, test_um_get_timestamp_us)
+    TEST(LibumTestBasicC, test_um_get_timestamp_us)
     {
         struct timespec tms;
 
@@ -27,7 +27,7 @@ namespace {
         EXPECT_TRUE(result >= sys_epoch - tolerene_ms);
     }
 
-    TEST(LibumTestC, test_um_errorstr)
+    TEST(LibumTestBasicC, test_um_errorstr)
     {
         for (int error_code = -10; error_code <= 0; error_code++)
         {
@@ -63,7 +63,7 @@ namespace {
         }
     }
 
-    TEST(LibumTestC, um_open)
+    TEST(LibumTestBasicC, um_open)
     {
         um_state *umHandle = um_open("INVALID-IP", 100, 0);
         EXPECT_EQ(NULL, umHandle);
