@@ -109,10 +109,17 @@ namespace {
     TEST_F(LibumTestUmpCpp, test_umpLEDcontrol) {
         EXPECT_TRUE(mUmObj->open());
         EXPECT_EQ(LIBUM_NO_ERROR, mUmObj->lastError());
-        EXPECT_TRUE(mUmObj->umpLEDcontrol(true, umId));     // Disable all LEDs
+        EXPECT_TRUE(mUmObj->umpLEDcontrol(true, umId));     // Disable all LEDs / sleep
         // We use a broadcast address so we might see out own packages also (LIBUM_INVALID_DEV)
         EXPECT_TRUE(LIBUM_NO_ERROR == mUmObj->lastError() ||
                   LIBUM_INVALID_DEV == mUmObj->lastError());
+
+        EXPECT_TRUE(mUmObj->umpLEDcontrol(false, umId));    // Back to normal / wakeup
+        // We use a broadcast address so we might see out own packages also (LIBUM_INVALID_DEV)
+        EXPECT_TRUE(LIBUM_NO_ERROR == mUmObj->lastError() ||
+                  LIBUM_INVALID_DEV == mUmObj->lastError());
+        // Wait a second to get the device online again.
+        usleep(100000); // 100 ms
     }
 
     TEST_F(LibumTestUmpCpp, test_readVersion) {
@@ -122,7 +129,7 @@ namespace {
         EXPECT_TRUE(mUmObj->readVersion(versionBuf, versionBufSize, umId));
 
         for (int i = 0; i < versionBufSize; i++) {
-            EXPECT_EQ(-1, versionBuf[i]) << "i=" << i;
+            EXPECT_NE(-1, versionBuf[i]) << "i=" << i;
         }
     }
 
