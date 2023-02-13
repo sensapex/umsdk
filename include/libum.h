@@ -1410,8 +1410,7 @@ public:
      * @return `true` if operation was successful, `false` otherwise
      */
      bool umpLEDcontrol(const bool disable, const int dev = LIBUM_USE_LAST_DEV)
-     {  return ump_led_control(_handle, getDev(dev), disable) >= 0; }
-
+     {  return ump_led_control(_handle, getDev(dev), disable ? 1 : 0) >= 0; }
 
      /**
       * @brief Set lens changer position

@@ -80,6 +80,16 @@ namespace {
         EXPECT_EQ(LIBUM_NOT_OPEN, mUmObj->lastError());
     }
 
+    TEST_F(LibumTestBasicCpp, test_getDeviceList) {
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_EQ(1, mUmObj->getDeviceList());
+    }
+
+    TEST_F(LibumTestBasicCpp, test_clearDeviceList) {
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_TRUE(mUmObj->clearDeviceList());
+    }
+
     // uMp spesific tests
     class LibumTestUmpCpp : public LibumTestBasicCpp {
         protected:
@@ -89,6 +99,20 @@ namespace {
     TEST_F(LibumTestUmpCpp, test_ping) {
         EXPECT_TRUE(mUmObj->open());
         EXPECT_TRUE(mUmObj->ping(umId));
+    }
+
+    TEST_F(LibumTestUmpCpp, test_getAxisCount) {
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_EQ(3, mUmObj->getAxisCount(umId));
+    }
+
+    TEST_F(LibumTestUmpCpp, test_umpLEDcontrol) {
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_EQ(LIBUM_NO_ERROR, mUmObj->lastError());
+        EXPECT_TRUE(mUmObj->umpLEDcontrol(true, umId));     // Disable all LEDs
+        // We use a broadcast address so we might see out own packages also (LIBUM_INVALID_DEV)
+        EXPECT_TRUE(LIBUM_NO_ERROR == mUmObj->lastError() ||
+                  LIBUM_INVALID_DEV == mUmObj->lastError());
     }
 
     // Main
