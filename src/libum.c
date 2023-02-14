@@ -200,6 +200,9 @@ const char *um_errorstr(const int ret_code)
     case LIBUM_INVALID_RESP:
         errorstr = "Invalid response";
         break;
+    case LIBUM_PEER_ERROR:
+        errorstr = "Peer failure";
+        break;
     default:
         errorstr = "Unknown error";
         break;
@@ -500,19 +503,10 @@ static int set_last_error(um_state *hndl, int code)
     if(hndl)
     {
         hndl->last_error = code;
-        switch(code)
-        {
-        case LIBUM_NO_ERROR: txt = "No error"; break;
-        case LIBUM_NOT_OPEN: txt = "Communication socket not open"; break;
-        case LIBUM_TIMEOUT:  txt = "Timeout occured"; break;
-        case LIBUM_INVALID_ARG: txt = "Invalid argument"; break;
-        case LIBUM_INVALID_DEV: txt = "Invalid dev id"; break;
-        case LIBUM_INVALID_RESP: txt = "Invalid response received"; break;
-        case LIBUM_OS_ERROR: txt = NULL; break;
-        default: txt = "Unknown error";
-        }
-        if(txt)
+        const char * txt = um_errorstr(code);
+        if (txt) {
             strcpy(hndl->errorstr_buffer, txt);
+        }
     }
     return code;
 }
@@ -1288,7 +1282,7 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
 
     if(options&SMCP1_OPT_ERROR) // error occured
     {
-        return set_last_error(hndl, LIBUM_UNKNOWN_ERROR);
+        return set_last_error(hndl, LIBUM_PEER_ERROR);
     }
     return 0;
 }

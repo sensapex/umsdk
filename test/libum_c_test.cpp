@@ -56,6 +56,9 @@ namespace {
             case LIBUM_INVALID_RESP:
                 EXPECT_STREQ("Invalid response", error_str);
                 break;
+            case LIBUM_PEER_ERROR:
+                EXPECT_STREQ("Peer failure", error_str);
+                break;
             default:
                 EXPECT_STREQ("Unknown error", error_str);
                 break;

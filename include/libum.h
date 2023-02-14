@@ -104,7 +104,7 @@ typedef enum um_error_e
     LIBUM_INVALID_ARG  = -4,  /**< Illegal command argument */
     LIBUM_INVALID_DEV  = -5,  /**< Illegal Device Id */
     LIBUM_INVALID_RESP = -6,  /**< Illegal response received */
-    LIBUM_UNKNOWN_ERROR= -7,  /**< Unknow error */
+    LIBUM_PEER_ERROR   = -7,  /**< Peer partner (eg umx-device) was not able handle a request */
 } um_error;
 
 /**
