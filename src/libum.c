@@ -1285,6 +1285,11 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
         // TODO request to us - at least ping or version query?
         um_log_print(hndl, 2,__PRETTY_FUNCTION__, "unsupported request type %d", type);
     }
+
+    if(options&SMCP1_OPT_ERROR) // error occured
+    {
+        return set_last_error(hndl, LIBUM_UNKNOWN_ERROR);
+    }
     return 0;
 }
 
@@ -1474,10 +1479,10 @@ static int um_send_msg(um_state *hndl, const int dev, const int cmd,
             if(ret == 1)
                 ack_received = true;
             // If not expecting a response, getting ACK is enough.
-            if(!respc && ret == 1)
+            if((!respc && !resp_option_requested) && ret == 1)
                 return 0;
             // Expecting response
-            if(respc && ret == 2)
+            if((respc || resp_option_requested) && ret == 2)
             {
                 // A notification may be received between the request and response,
                 // a more pedantic response validation is needed.

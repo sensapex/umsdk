@@ -192,6 +192,31 @@ namespace {
         EXPECT_EQ(-2, paramNoAccess);
     }
 
+    TEST_F(LibumTestUmpCpp, test_setParam) {
+        EXPECT_TRUE(mUmObj->open());
+        // Virtual axis angle
+        int paramOrigVirtualXAngle = -1;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_VIRTUALX_ANGLE, &paramOrigVirtualXAngle, umId));
+        EXPECT_LT(paramOrigVirtualXAngle, 900);
+        EXPECT_GE(paramOrigVirtualXAngle, 0);
+
+        int paramNewVirtualXAngle = 450;
+        EXPECT_TRUE(mUmObj->setParam(SMCP1_PARAM_VIRTUALX_ANGLE, paramNewVirtualXAngle, umId));
+
+        int paramVirtualXAngle = -1;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_VIRTUALX_ANGLE, &paramVirtualXAngle, umId));
+        EXPECT_EQ(paramVirtualXAngle, paramNewVirtualXAngle);
+
+        EXPECT_TRUE(mUmObj->setParam(SMCP1_PARAM_VIRTUALX_ANGLE, paramOrigVirtualXAngle, umId));
+
+        // Read only params. We need to set REQ_RESP to get any response. Like errors.
+        EXPECT_TRUE(mUmObj->cmdOptions(SMCP1_OPT_REQ_ACK | SMCP1_OPT_REQ_RESP));
+        EXPECT_FALSE(mUmObj->setParam(SMCP1_PARAM_HW_ID, 99, umId));
+        int myHwId;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_HW_ID, &myHwId, umId));
+        EXPECT_NE(99, myHwId);
+    }
+
     // Main
     int main(int argc, char **argv) {
         ::testing::InitGoogleTest(&argc, argv);

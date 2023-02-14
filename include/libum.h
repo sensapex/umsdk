@@ -104,6 +104,7 @@ typedef enum um_error_e
     LIBUM_INVALID_ARG  = -4,  /**< Illegal command argument */
     LIBUM_INVALID_DEV  = -5,  /**< Illegal Device Id */
     LIBUM_INVALID_RESP = -6,  /**< Illegal response received */
+    LIBUM_UNKNOWN_ERROR= -7,  /**< Unknow error */
 } um_error;
 
 /**
@@ -1201,7 +1202,7 @@ public:
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool setParam(const int paramId, const short value, const int dev = LIBUM_USE_LAST_DEV)
+    bool setParam(const int paramId, const int value, const int dev = LIBUM_USE_LAST_DEV)
     {	return  um_set_param(_handle, getDev(dev), paramId, value) >= 0; }
 
     /**
