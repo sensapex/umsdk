@@ -478,7 +478,10 @@ typedef enum
     SMCP1_PARAM_MEM_SPEED               = 2,
     SMCP1_PARAM_DEV_ID                  = 3,
     SMCP1_PARAM_VIRTUALX_ANGLE          = 4, // angle value degrees*10
-    // Read only range via normal SDK
+
+    SMCP1_PARAM_AXIS_HEAD_CONFIGURATION = 0x80, // bits 0-4 binded to actuators. bit values (0==normal, 1==inverted)
+
+    // Read only range
     SMCP1_PARAM_HW_ID                   = 0x101,
     SMCP1_PARAM_SN                      = 0x102,
     SMCP1_PARAM_EOW                     = 0x103,

@@ -2,8 +2,10 @@
 #include <libum.h>
 #include <smcp1.h>
 
-
 namespace {
+
+#define UNDEFINED_UMX_INDEX     5
+
     // Basic Cpp tests
     class LibumTestBasicCpp : public ::testing::Test {
 
@@ -99,11 +101,13 @@ namespace {
     TEST_F(LibumTestUmpCpp, test_ping) {
         EXPECT_TRUE(mUmObj->open());
         EXPECT_TRUE(mUmObj->ping(umId));
+        EXPECT_FALSE(mUmObj->ping(umId+UNDEFINED_UMX_INDEX));
     }
 
     TEST_F(LibumTestUmpCpp, test_getAxisCount) {
         EXPECT_TRUE(mUmObj->open());
         EXPECT_EQ(3, mUmObj->getAxisCount(umId));
+        EXPECT_LT(mUmObj->getAxisCount(umId+UNDEFINED_UMX_INDEX), 0);
     }
 
     TEST_F(LibumTestUmpCpp, test_umpLEDcontrol) {
@@ -120,6 +124,8 @@ namespace {
                   LIBUM_INVALID_DEV == mUmObj->lastError());
         // Wait a second to get the device online again.
         usleep(100000); // 100 ms
+
+        EXPECT_FALSE(mUmObj->umpLEDcontrol(false, umId+UNDEFINED_UMX_INDEX));    // Back to normal / wakeup
     }
 
     TEST_F(LibumTestUmpCpp, test_readVersion) {
@@ -131,6 +137,59 @@ namespace {
         for (int i = 0; i < versionBufSize; i++) {
             EXPECT_NE(-1, versionBuf[i]) << "i=" << i;
         }
+    }
+
+    TEST_F(LibumTestUmpCpp, test_getParam) {
+        EXPECT_TRUE(mUmObj->open());
+        // device id
+        int paramDevId = -1;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_DEV_ID, &paramDevId, umId));
+        EXPECT_EQ(umId, paramDevId);
+        // MemSpeed
+        int paramMemSpeed = -1;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_MEM_SPEED, &paramMemSpeed, umId));
+        EXPECT_GE(paramMemSpeed, 0);
+        // VirtualX_Angle
+        int paramVirtualXAngle = -1;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_VIRTUALX_ANGLE, &paramVirtualXAngle, umId));
+        EXPECT_LT(paramVirtualXAngle, 900);
+        EXPECT_GE(paramVirtualXAngle, 0);
+        // Axis config
+        int paramAxisConf = -1;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_AXIS_HEAD_CONFIGURATION, &paramAxisConf, umId));
+        EXPECT_GE(paramAxisConf, 0);
+        EXPECT_LE(paramAxisConf, 0b1111);
+        // VirtualX_Angle
+        int paramHwId = -1;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_HW_ID, &paramHwId, umId));
+        EXPECT_LT(paramHwId, 5);
+        EXPECT_GE(paramHwId, 1);
+        // Serial number
+        int paramSerialNumber = -2;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_SN, &paramSerialNumber, umId));
+        EXPECT_GE(paramSerialNumber, -1);
+        // EOW
+        int paramEOW = -2;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_EOW, &paramEOW, umId));
+        EXPECT_GE(paramEOW, -1);
+        // VirtualX Detected Angle
+        int paramVaDetectedAngle = -2;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_VIRTUALX_DETECTED_ANGLE, &paramVaDetectedAngle, umId));
+        EXPECT_LT(paramVaDetectedAngle, 900);
+        EXPECT_GE(paramVaDetectedAngle, 0);
+        // Axis count
+        int paramAxisCount = -2;
+        EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_AXIS_COUNT, &paramAxisCount, umId));
+        EXPECT_GE(paramAxisCount, -1);
+
+        // device id but from unfound device => will result an error
+        int paramDevIdNotFound = -2;
+        EXPECT_FALSE(mUmObj->getParam(SMCP1_PARAM_DEV_ID, &paramDevIdNotFound, umId+UNDEFINED_UMX_INDEX));
+        EXPECT_EQ(-2, paramDevIdNotFound);
+        // Invalid param
+        int paramNoAccess = -2;
+        EXPECT_FALSE(mUmObj->getParam(0x201, &paramNoAccess, umId));
+        EXPECT_EQ(-2, paramNoAccess);
     }
 
     // Main
