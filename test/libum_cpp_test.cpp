@@ -247,6 +247,73 @@ namespace {
         EXPECT_TRUE(mUmObj->hasUnicastAddress(mUmId));
     }
 
+    TEST_F(LibumTestUmpCpp, test_getPositions) {
+        const float unInitPosition = -123456.7890;
+        float x1 = unInitPosition;
+        float y1 = unInitPosition;
+        float z1 = unInitPosition;
+        float w1 = unInitPosition;
+
+        // Expect failure. Not open.
+        EXPECT_FALSE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId));
+        EXPECT_EQ(x1, unInitPosition);
+        EXPECT_EQ(y1, unInitPosition);
+        EXPECT_EQ(z1, unInitPosition);
+        EXPECT_EQ(w1, unInitPosition);
+
+        // Expect failure. Device not found.
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_FALSE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId+UNDEFINED_UMX_INDEX));
+        EXPECT_EQ(x1, unInitPosition);
+        EXPECT_EQ(y1, unInitPosition);
+        EXPECT_EQ(z1, unInitPosition);
+        EXPECT_EQ(w1, unInitPosition);
+
+        // Expect pass. Normal use case.
+        int axisCnt = mUmObj->getAxisCount(mUmId);
+        EXPECT_GE(axisCnt, 3);
+        EXPECT_LE(axisCnt, 4);
+
+        EXPECT_TRUE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId));
+
+        EXPECT_NE(unInitPosition, x1);
+        EXPECT_NE(unInitPosition, y1);
+        EXPECT_NE(unInitPosition, z1);
+        if (axisCnt == 4) {
+            EXPECT_NE(unInitPosition, w1);
+        } else {
+            EXPECT_EQ(unInitPosition, w1);
+        }
+
+        float x2 = unInitPosition;
+        float y2 = unInitPosition;
+        float z2 = unInitPosition;
+        float w2 = unInitPosition;
+
+        // Force read using cached values
+        EXPECT_TRUE(mUmObj->getPositions(&x2, &y2, &z2, &w2, mUmId, LIBUM_TIMELIMIT_CACHE_ONLY));
+        EXPECT_EQ(x1, x2);
+        EXPECT_EQ(y1, y2);
+        EXPECT_EQ(z1, z2);
+        EXPECT_EQ(w1, w2);
+
+        // Force read coordinates from device
+        float x3 = unInitPosition;
+        float y3 = unInitPosition;
+        float z3 = unInitPosition;
+        float w3 = unInitPosition;
+
+        EXPECT_TRUE(mUmObj->getPositions(&x3, &y3, &z3, &w3, mUmId, LIBUM_TIMELIMIT_DISABLED));
+        EXPECT_NE(unInitPosition, x3);
+        EXPECT_NE(unInitPosition, y3);
+        EXPECT_NE(unInitPosition, z3);
+        if (axisCnt == 4) {
+            EXPECT_NE(unInitPosition, w3);
+        } else {
+            EXPECT_EQ(unInitPosition, w3);
+        }
+    }
+
     // Main
     int main(int argc, char **argv) {
         ::testing::InitGoogleTest(&argc, argv);
