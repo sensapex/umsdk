@@ -99,11 +99,19 @@ namespace {
         EXPECT_NE(nullptr, mUmObj->getHandle());
     }
 
+    static void localLogCallBack(int level, const void *arg, const char *func, const char *message) {
+        std::cout << "localLogCallBack called - " << (char*)arg << " - " << func << " - " << message << std::endl;
+    }
+
     TEST_F(LibumTestBasicCpp, test_setLogCallback) {
         EXPECT_FALSE(mUmObj->setLogCallback(3, NULL, NULL));
         EXPECT_TRUE(mUmObj->open());
         EXPECT_TRUE(mUmObj->setLogCallback(3, NULL, NULL));
         EXPECT_FALSE(mUmObj->setLogCallback(-1, NULL, NULL));
+
+        um_log_print_func tmpCallbackFuncPtr = &localLogCallBack;
+        EXPECT_TRUE(mUmObj->setLogCallback(3, tmpCallbackFuncPtr, "Callback argument"));
+        EXPECT_TRUE(mUmObj->ping(1));
     }
 
     // uMp spesific tests
