@@ -321,6 +321,47 @@ namespace {
         }
     }
 
+    TEST_F(LibumTestUmpCpp, test_getSetFeature) {
+        bool value;
+        EXPECT_FALSE(mUmObj->getFeature(SMCP10_FEAT_DISABLE_LEDS, &value, mUmId));
+        EXPECT_FALSE(mUmObj->setFeature(SMCP10_FEAT_DISABLE_LEDS, false, mUmId));
+
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_TRUE(mUmObj->getFeature(SMCP10_FEAT_DISABLE_LEDS, &value, mUmId));
+
+        bool newValue = !value;
+        EXPECT_NE(newValue, value);
+        EXPECT_TRUE(mUmObj->setFeature(SMCP10_FEAT_DISABLE_LEDS, newValue, mUmId));
+        EXPECT_TRUE(mUmObj->getFeature(SMCP10_FEAT_DISABLE_LEDS, &value, mUmId));
+        EXPECT_EQ(newValue, value);
+
+        newValue = !value;
+        EXPECT_NE(newValue, value);
+        EXPECT_TRUE(mUmObj->setFeature(SMCP10_FEAT_DISABLE_LEDS, newValue, mUmId));
+        EXPECT_TRUE(mUmObj->getFeature(SMCP10_FEAT_DISABLE_LEDS, &value, mUmId));
+        EXPECT_EQ(newValue, value);
+    }
+
+    TEST_F(LibumTestUmpCpp, test_getSetExtFeature) {
+        bool value;
+        EXPECT_FALSE(mUmObj->getExtFeature(SMCP10_EXT_FEAT_SOFT_START, &value, mUmId));
+        EXPECT_FALSE(mUmObj->setExtFeature(SMCP10_EXT_FEAT_SOFT_START, false, mUmId));
+
+        EXPECT_TRUE(mUmObj->open());
+        EXPECT_TRUE(mUmObj->getExtFeature(SMCP10_EXT_FEAT_SOFT_START, &value, mUmId));
+
+        bool newValue = !value;
+        EXPECT_NE(newValue, value);
+        EXPECT_TRUE(mUmObj->setExtFeature(SMCP10_EXT_FEAT_SOFT_START, newValue, mUmId));
+        EXPECT_TRUE(mUmObj->getExtFeature(SMCP10_EXT_FEAT_SOFT_START, &value, mUmId));
+        EXPECT_EQ(newValue, value);
+
+        newValue = !value;
+        EXPECT_NE(newValue, value);
+        EXPECT_TRUE(mUmObj->setExtFeature(SMCP10_EXT_FEAT_SOFT_START, newValue, mUmId));
+        EXPECT_TRUE(mUmObj->getExtFeature(SMCP10_EXT_FEAT_SOFT_START, &value, mUmId));
+        EXPECT_EQ(newValue, value);
+    }
     // Main
     int main(int argc, char **argv) {
         ::testing::InitGoogleTest(&argc, argv);
