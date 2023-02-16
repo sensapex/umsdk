@@ -261,9 +261,16 @@ namespace {
         EXPECT_EQ(z1, unInitPosition);
         EXPECT_EQ(w1, unInitPosition);
 
-        // Expect failure. Device not found.
+        // Expect failure. Timeout.
         EXPECT_TRUE(mUmObj->open());
         EXPECT_FALSE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId+UNDEFINED_UMX_INDEX));
+        EXPECT_EQ(x1, unInitPosition);
+        EXPECT_EQ(y1, unInitPosition);
+        EXPECT_EQ(z1, unInitPosition);
+        EXPECT_EQ(w1, unInitPosition);
+
+        // Expect failure. Invalid device.
+        EXPECT_FALSE(mUmObj->getPositions(&x1, &y1, &z1, &w1, -1));
         EXPECT_EQ(x1, unInitPosition);
         EXPECT_EQ(y1, unInitPosition);
         EXPECT_EQ(z1, unInitPosition);
