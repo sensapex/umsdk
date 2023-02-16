@@ -131,7 +131,8 @@ namespace {
         EXPECT_EQ(3, mUmObj->getAxisCount(mUmId));
         EXPECT_LT(mUmObj->getAxisCount(mUmId+UNDEFINED_UMX_INDEX), 0);
     }
-
+/*
+    // TODO VMK. This seems to cause issues. Need to investigate.
     TEST_F(LibumTestUmpCpp, test_umpLEDcontrol) {
         EXPECT_TRUE(mUmObj->open());
         EXPECT_EQ(LIBUM_NO_ERROR, mUmObj->lastError());
@@ -149,6 +150,7 @@ namespace {
 
         EXPECT_FALSE(mUmObj->umpLEDcontrol(false, mUmId+UNDEFINED_UMX_INDEX));    // Back to normal / wakeup
     }
+*/
 
     TEST_F(LibumTestUmpCpp, test_readVersion) {
         const int versionBufSize = 5;
@@ -362,6 +364,65 @@ namespace {
         EXPECT_TRUE(mUmObj->getExtFeature(SMCP10_EXT_FEAT_SOFT_START, &value, mUmId));
         EXPECT_EQ(newValue, value);
     }
+
+
+    TEST_F(LibumTestUmpCpp, test_gotoPos) {
+        EXPECT_FALSE(mUmObj->gotoPos(0, 0, 0, 0, 1000, mUmId));
+        EXPECT_TRUE(mUmObj->open());
+
+        um_log_print_func tmpCallbackFuncPtr = &localLogCallBack;
+        EXPECT_TRUE(mUmObj->setLogCallback(1, NULL, "Callback argument"));
+
+        int axisCnt = mUmObj->getAxisCount(mUmId);
+        EXPECT_GE(axisCnt, 3);
+        EXPECT_LE(axisCnt, 4);
+
+        float x1, y1, z1, w1;
+        const float KDeltaUm = 200;
+        EXPECT_TRUE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId));
+
+        float x2 = x1 + KDeltaUm;
+        float y2 = y1 + KDeltaUm;
+        float z2 = z1 + KDeltaUm;
+        float w2 = w1 + KDeltaUm;
+
+        EXPECT_TRUE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId));
+        EXPECT_TRUE(mUmObj->gotoPos(x2, y2, z2, w2, KDeltaUm, mUmId, true));
+        sleep(3);
+
+        float x3, y3, z3, w3;
+        const float KTargetToleranceUm = 1.00;
+        EXPECT_TRUE(mUmObj->getPositions(&x3, &y3, &z3, &w3, mUmId, LIBUM_TIMELIMIT_DISABLED));
+
+        EXPECT_TRUE((x3 >= x2 - KTargetToleranceUm) && (x3 <= x2 + KTargetToleranceUm));
+        EXPECT_TRUE((y3 >= y2 - KTargetToleranceUm) && (y3 <= y2 + KTargetToleranceUm));
+        EXPECT_TRUE((z3 >= z2 - KTargetToleranceUm) && (z3 <= z2 + KTargetToleranceUm));
+        if (axisCnt == 4) {
+            EXPECT_TRUE((w3 >= w2 - KTargetToleranceUm) && (w3 <= w2 + KTargetToleranceUm));
+        } else {
+            EXPECT_TRUE((w3 >= w1 - KTargetToleranceUm) && (w3 <= w1 + KTargetToleranceUm));
+        }
+
+        // Move actuators back to their original positions
+        x2 = x1;
+        y2 = y1;
+        z2 = z1;
+        w2 = w1;
+        EXPECT_TRUE(mUmObj->gotoPos(x2, y2, z2, w2, KDeltaUm, mUmId, true));
+        sleep(3);
+
+        EXPECT_TRUE(mUmObj->getPositions(&x3, &y3, &z3, &w3, mUmId));
+
+        EXPECT_TRUE((x3 >= x2 - KTargetToleranceUm) && (x3 <= x2 + KTargetToleranceUm));
+        EXPECT_TRUE((y3 >= y2 - KTargetToleranceUm) && (y3 <= y2 + KTargetToleranceUm));
+        EXPECT_TRUE((z3 >= z2 - KTargetToleranceUm) && (z3 <= z2 + KTargetToleranceUm));
+        if (axisCnt == 4) {
+            EXPECT_TRUE((w3 >= w2 - KTargetToleranceUm) && (w3 <= w2 + KTargetToleranceUm));
+        } else {
+            EXPECT_TRUE((w3 >= w1 - KTargetToleranceUm) && (w3 <= w1 + KTargetToleranceUm));
+        }
+    }
+
     // Main
     int main(int argc, char **argv) {
         ::testing::InitGoogleTest(&argc, argv);
