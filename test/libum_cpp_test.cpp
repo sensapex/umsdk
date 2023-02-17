@@ -131,26 +131,20 @@ namespace {
         EXPECT_EQ(3, mUmObj->getAxisCount(mUmId));
         EXPECT_LT(mUmObj->getAxisCount(mUmId+UNDEFINED_UMX_INDEX), 0);
     }
-/*
-    // TODO VMK. This seems to cause issues. Need to investigate.
+
     TEST_F(LibumTestUmpCpp, test_umpLEDcontrol) {
         EXPECT_TRUE(mUmObj->open());
-        EXPECT_EQ(LIBUM_NO_ERROR, mUmObj->lastError());
-        EXPECT_TRUE(mUmObj->umpLEDcontrol(true, mUmId));     // Disable all LEDs / sleep
-        // We use a broadcast address so we might see out own packages also (LIBUM_INVALID_DEV)
-        EXPECT_TRUE(LIBUM_NO_ERROR == mUmObj->lastError() ||
-                  LIBUM_INVALID_DEV == mUmObj->lastError());
 
-        EXPECT_TRUE(mUmObj->umpLEDcontrol(false, mUmId));    // Back to normal / wakeup
-        // We use a broadcast address so we might see out own packages also (LIBUM_INVALID_DEV)
-        EXPECT_TRUE(LIBUM_NO_ERROR == mUmObj->lastError() ||
-                  LIBUM_INVALID_DEV == mUmObj->lastError());
-        // Wait a second to get the device online again.
-        usleep(100000); // 100 ms
+        // Disable all LEDs / sleep
+        EXPECT_TRUE(mUmObj->umpLEDcontrol(true, mUmId));
+        usleep(100000); // Wait a short time to get the device stabilized
+
+        // Back to normal / wakeup
+        EXPECT_TRUE(mUmObj->umpLEDcontrol(false, mUmId));
+        usleep(100000); // Wait a short time to get the device stabilized
 
         EXPECT_FALSE(mUmObj->umpLEDcontrol(false, mUmId+UNDEFINED_UMX_INDEX));    // Back to normal / wakeup
     }
-*/
 
     TEST_F(LibumTestUmpCpp, test_readVersion) {
         const int versionBufSize = 5;
