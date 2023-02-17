@@ -382,7 +382,7 @@ namespace {
 
         EXPECT_TRUE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId));
         EXPECT_TRUE(mUmObj->gotoPos(x2, y2, z2, w2, KDeltaUm, mUmId, true));
-        sleep(3);
+        sleep(axisCnt == 3 ? 2 : 3);
 
         float x3, y3, z3, w3;
         const float KTargetToleranceUm = 1.00;
@@ -403,7 +403,7 @@ namespace {
         z2 = z1;
         w2 = w1;
         EXPECT_TRUE(mUmObj->gotoPos(x2, y2, z2, w2, KDeltaUm, mUmId, true));
-        sleep(3);
+        sleep(axisCnt == 3 ? 2 : 3);
 
         EXPECT_TRUE(mUmObj->getPositions(&x3, &y3, &z3, &w3, mUmId));
 
