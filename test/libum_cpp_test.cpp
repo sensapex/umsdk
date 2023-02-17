@@ -158,6 +158,11 @@ namespace {
     }
 
     TEST_F(LibumTestUmpCpp, test_getParam) {
+
+        int paramTmp = -2;
+        EXPECT_FALSE(mUmObj->getParam(SMCP1_PARAM_VIRTUALX_ANGLE, &paramTmp, mUmId));
+        EXPECT_EQ(-2, paramTmp);
+
         EXPECT_TRUE(mUmObj->open());
         // device id
         int paramDevId = -1;
@@ -211,6 +216,8 @@ namespace {
     }
 
     TEST_F(LibumTestUmpCpp, test_setParam) {
+        EXPECT_FALSE(mUmObj->setParam(SMCP1_PARAM_VIRTUALX_ANGLE, 1000, mUmId));
+
         EXPECT_TRUE(mUmObj->open());
         // Virtual axis angle
         int paramOrigVirtualXAngle = -1;
