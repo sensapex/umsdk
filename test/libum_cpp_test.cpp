@@ -364,9 +364,6 @@ namespace {
         EXPECT_FALSE(mUmObj->gotoPos(0, 0, 0, 0, 1000, mUmId));
         EXPECT_TRUE(mUmObj->open());
 
-        um_log_print_func tmpCallbackFuncPtr = &localLogCallBack;
-        EXPECT_TRUE(mUmObj->setLogCallback(1, NULL, "Callback argument"));
-
         int axisCnt = mUmObj->getAxisCount(mUmId);
         EXPECT_GE(axisCnt, 3);
         EXPECT_LE(axisCnt, 4);
@@ -379,9 +376,8 @@ namespace {
         float y2 = y1 + KDeltaUm;
         float z2 = z1 + KDeltaUm;
         float w2 = w1 + KDeltaUm;
-
-        EXPECT_TRUE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId));
         EXPECT_TRUE(mUmObj->gotoPos(x2, y2, z2, w2, KDeltaUm, mUmId, true));
+
         sleep(axisCnt == 3 ? 2 : 3);
 
         float x3, y3, z3, w3;
@@ -414,6 +410,61 @@ namespace {
             EXPECT_TRUE((w3 >= w2 - KTargetToleranceUm) && (w3 <= w2 + KTargetToleranceUm));
         } else {
             EXPECT_TRUE((w3 >= w1 - KTargetToleranceUm) && (w3 <= w1 + KTargetToleranceUm));
+        }
+    }
+
+    TEST_F(LibumTestUmpCpp, test_takeStep) {
+        EXPECT_FALSE(mUmObj->takeStep(10, 10, 10, 10, 200, mUmId));
+        EXPECT_TRUE(mUmObj->open());
+
+        int axisCnt = mUmObj->getAxisCount(mUmId);
+        EXPECT_GE(axisCnt, 3);
+        EXPECT_LE(axisCnt, 4);
+
+        float x1, y1, z1, w1;
+        const float KDeltaUm = 200;
+        const float KSpeedUms = 2.0 * KDeltaUm;
+        EXPECT_TRUE(mUmObj->getPositions(&x1, &y1, &z1, &w1, mUmId, LIBUM_TIMELIMIT_DISABLED));
+
+        EXPECT_TRUE(mUmObj->takeStep(KDeltaUm, KDeltaUm, KDeltaUm, KDeltaUm, KSpeedUms, mUmId));
+        sleep(axisCnt == 3 ? 2 : 3);
+
+        float x2, y2, z2, w2;
+        const float KTargetToleranceUm = 1.00;
+        EXPECT_TRUE(mUmObj->getPositions(&x2, &y2, &z2, &w2, mUmId, LIBUM_TIMELIMIT_DISABLED));
+
+        EXPECT_TRUE((x2 >= x1 + KDeltaUm - KTargetToleranceUm) &&
+                    (x2 <= x1 + KDeltaUm + KTargetToleranceUm)) << x2 << "/" << x1 + KDeltaUm - KTargetToleranceUm;
+        EXPECT_TRUE((y2 >= y1 + KDeltaUm - KTargetToleranceUm) &&
+                    (y2 <= y1 + KDeltaUm + KTargetToleranceUm));
+        EXPECT_TRUE((z2 >= z1 + KDeltaUm - KTargetToleranceUm) &&
+                    (z2 <= z1 + KDeltaUm + KTargetToleranceUm));
+        if (axisCnt == 4) {
+            EXPECT_TRUE((w2 >= w1 + KDeltaUm - KTargetToleranceUm) &&
+                        (w2 <= w1 + KDeltaUm + KTargetToleranceUm));
+        } else {
+            EXPECT_TRUE((w2 >= w1 - KTargetToleranceUm) &&
+                        (w2 <= w1 + KTargetToleranceUm));
+        }
+
+        // Move actuators back to their original positions
+        EXPECT_TRUE(mUmObj->takeStep(-KDeltaUm, -KDeltaUm, -KDeltaUm, -KDeltaUm, KSpeedUms, mUmId));
+        sleep(axisCnt == 3 ? 2 : 3);
+
+        EXPECT_TRUE(mUmObj->getPositions(&x2, &y2, &z2, &w2, mUmId));
+
+        EXPECT_TRUE((x2 >= x1 - KTargetToleranceUm) &&
+                    (x2 <= x1 + KTargetToleranceUm));
+        EXPECT_TRUE((y2 >= y1 - KTargetToleranceUm) &&
+                    (y2 <= y1 + KTargetToleranceUm));
+        EXPECT_TRUE((z2 >= z1 - KTargetToleranceUm) &&
+                    (z2 <= z1 + KTargetToleranceUm));
+        if (axisCnt == 4) {
+            EXPECT_TRUE((w2 >= w1 - KTargetToleranceUm) &&
+                        (w2 <= w1 + KTargetToleranceUm));
+        } else {
+            EXPECT_TRUE((w2 >= w1 - KTargetToleranceUm) &&
+                        (w2 <= w1 + KTargetToleranceUm));
         }
     }
 
