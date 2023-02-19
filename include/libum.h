@@ -1340,7 +1340,7 @@ public:
      * @param[out] devs   Pointer to list of devices found
      * @param      size     Size of the above buffer (number of integers)
      *
-     * @return number of found devices
+     * @return Negative value if an error occurred, number of found devices otherwise
      */
     int getDeviceList(int *devs = NULL, const int size = 0)
     {   return um_get_device_list(_handle, devs, size); }

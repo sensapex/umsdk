@@ -1280,7 +1280,7 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
         um_log_print(hndl, 2,__PRETTY_FUNCTION__, "unsupported request type %d", type);
     }
 
-    if(options&SMCP1_OPT_ERROR) // error occured
+    if(options&SMCP1_OPT_ERROR)
     {
         return set_last_error(hndl, LIBUM_PEER_ERROR);
     }
@@ -1486,8 +1486,13 @@ static int um_send_msg(um_state *hndl, const int dev, const int cmd,
                     continue;
                 if(ntohs(resp_header->sub_blocks) < 1)
                 {
-                    um_log_print(hndl, 2,__PRETTY_FUNCTION__, "empty response");
-                    return set_last_error(hndl, LIBUM_INVALID_RESP);
+                    if(ntohl(resp_header->options) & SMCP1_OPT_ERROR) {
+                        um_log_print(hndl, 2,__PRETTY_FUNCTION__, "peer error");
+                        return set_last_error(hndl, LIBUM_PEER_ERROR);
+                    } else {
+                        um_log_print(hndl, 2,__PRETTY_FUNCTION__, "empty response");
+                        return set_last_error(hndl, LIBUM_INVALID_RESP);
+                    }
                 }
                 resp_data_size = ntohs(resp_sub_header->data_size);
                 resp_data_type = ntohs(resp_sub_header->data_type);

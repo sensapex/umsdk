@@ -84,11 +84,14 @@ namespace {
     }
 
     TEST_F(LibumTestBasicCpp, test_getDeviceList) {
+        EXPECT_LT(mUmObj->getDeviceList(), 0);
+
         EXPECT_TRUE(mUmObj->open());
         EXPECT_EQ(1, mUmObj->getDeviceList());
     }
 
     TEST_F(LibumTestBasicCpp, test_clearDeviceList) {
+        EXPECT_FALSE(mUmObj->clearDeviceList());
         EXPECT_TRUE(mUmObj->open());
         EXPECT_TRUE(mUmObj->clearDeviceList());
     }
@@ -127,9 +130,11 @@ namespace {
     }
 
     TEST_F(LibumTestUmpCpp, test_getAxisCount) {
+        EXPECT_LE(mUmObj->getAxisCount(mUmId), 0);
         EXPECT_TRUE(mUmObj->open());
         EXPECT_EQ(3, mUmObj->getAxisCount(mUmId));
         EXPECT_LT(mUmObj->getAxisCount(mUmId+UNDEFINED_UMX_INDEX), 0);
+        EXPECT_LE(mUmObj->getAxisCount(-1),0);
     }
 
     TEST_F(LibumTestUmpCpp, test_umpLEDcontrol) {
@@ -148,13 +153,17 @@ namespace {
 
     TEST_F(LibumTestUmpCpp, test_readVersion) {
         const int versionBufSize = 5;
-        EXPECT_TRUE(mUmObj->open());
         int versionBuf[versionBufSize] = {-1};
+        EXPECT_FALSE(mUmObj->readVersion(versionBuf, versionBufSize, mUmId));
+
+        EXPECT_TRUE(mUmObj->open());
         EXPECT_TRUE(mUmObj->readVersion(versionBuf, versionBufSize, mUmId));
 
         for (int i = 0; i < versionBufSize; i++) {
             EXPECT_NE(-1, versionBuf[i]) << "i=" << i;
         }
+
+        EXPECT_FALSE(mUmObj->readVersion(versionBuf, versionBufSize, -1));
     }
 
     TEST_F(LibumTestUmpCpp, test_getParam) {
@@ -237,6 +246,7 @@ namespace {
         // Read only params. We need to set REQ_RESP to get any response. Like errors.
         EXPECT_TRUE(mUmObj->cmdOptions(SMCP1_OPT_REQ_ACK | SMCP1_OPT_REQ_RESP));
         EXPECT_FALSE(mUmObj->setParam(SMCP1_PARAM_HW_ID, 99, mUmId));
+        EXPECT_EQ(LIBUM_PEER_ERROR, mUmObj->lastError());
         int myHwId;
         EXPECT_TRUE(mUmObj->getParam(SMCP1_PARAM_HW_ID, &myHwId, mUmId));
         EXPECT_NE(99, myHwId);
@@ -418,6 +428,15 @@ namespace {
         } else {
             EXPECT_TRUE((w3 >= w1 - KTargetToleranceUm) && (w3 <= w1 + KTargetToleranceUm));
         }
+        // Invalid deviceId (-1)
+        EXPECT_FALSE(mUmObj->gotoPos(1000, 1000, 1000, 1000, 500, -1, true));
+        // Invalid position (LIBUM_MAX_POSITION+1)
+        EXPECT_FALSE(mUmObj->gotoPos(LIBUM_MAX_POSITION+1, 1000, 1000, 1000, 500, mUmId, true));
+        // Invalid position (-1001)
+        EXPECT_FALSE(mUmObj->gotoPos(1000, -1001, 1000, 1000, 500, mUmId, true));
+        // Invalid speed (-1.0)
+        EXPECT_FALSE(mUmObj->gotoPos(1000, 1000, 1000, 1000, -1.0, mUmId, true));
+
     }
 
     TEST_F(LibumTestUmpCpp, test_takeStep) {
