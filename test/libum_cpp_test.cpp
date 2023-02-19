@@ -505,9 +505,8 @@ namespace {
         float x3, y3, z3, w3;
         EXPECT_TRUE(mUmObj->getPositions(&x3, &y3, &z3, &w3, mUmId, LIBUM_TIMELIMIT_DISABLED));
 
-        // VMK. This just stop working suddenly. X is not moving backwards any more. An broken actuator?
-        //EXPECT_TRUE((x3 >= x1 - KTargetToleranceUm) &&
-        //            (x3 <= x1 + KTargetToleranceUm));
+        EXPECT_TRUE((x3 >= x1 - KTargetToleranceUm) &&
+                    (x3 <= x1 + KTargetToleranceUm));
         EXPECT_TRUE((y3 >= y1 - KTargetToleranceUm) &&
                     (y3 <= y1 + KTargetToleranceUm));
         EXPECT_TRUE((z3 >= z1 - KTargetToleranceUm) &&
@@ -515,7 +514,7 @@ namespace {
         EXPECT_TRUE((w3 >= w1 - KTargetToleranceUm) &&
                     (w3 <= w1 + KTargetToleranceUm));
 
-        // Verify that prevent_movement filter works
+        // Phase 4. Verify with the prevent_movement feature
         EXPECT_TRUE(mUmObj->setFeature(SMCP10_FEAT_PREVENT_MOVEMENT, true, mUmId));
         EXPECT_FALSE(mUmObj->takeStep(KDeltaUm, KDeltaUm, KDeltaUm, KDeltaUm, KSpeedUms, mUmId));
         EXPECT_TRUE(mUmObj->setFeature(SMCP10_FEAT_PREVENT_MOVEMENT, false, mUmId));
