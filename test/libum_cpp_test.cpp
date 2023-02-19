@@ -494,6 +494,13 @@ namespace {
         }
     }
 
+    TEST_F(LibumTestUmpCpp, test_umpHandednessConfiguration) {
+        EXPECT_LT(mUmObj->umpHandednessConfiguration(mUmId), 0);
+        EXPECT_TRUE(mUmObj->open());
+        int handednessConfig = mUmObj->umpHandednessConfiguration(mUmId);
+        EXPECT_TRUE(handednessConfig == 0 || handednessConfig == 1);
+    }
+
     // Main
     int main(int argc, char **argv) {
         ::testing::InitGoogleTest(&argc, argv);

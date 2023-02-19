@@ -1602,6 +1602,16 @@ int ump_get_axis_angle(um_state *hndl, const int dev, float *value)
     return resp;
 }
 
+int ump_get_handedness_configuration(um_state *hndl, const int dev)
+{
+    int config;
+    int resp = um_get_param(hndl, dev, SMCP1_PARAM_AXIS_HEAD_CONFIGURATION, &config);
+    if(resp >= 0) {
+        resp = config & (1 << 1) ? 1 : 0;
+    }
+    return resp;
+}
+
 static int ump_resolve_cls_mode(const float step_x, const float step_y, const float step_z, const float step_w,
                                 const int speed_x, const int speed_y, const int speed_z, const int speed_w)
 {

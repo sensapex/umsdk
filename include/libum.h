@@ -1,7 +1,7 @@
 /**
  * @file    libum.h
  * @author  Sensapex <support@sensapex.com>
- * @date    1 Feb 2023
+ * @date    19 Feb 2023
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
  * @copyright   Copyright (c) 2016-2023 Sensapex. All rights reserved
  *
@@ -727,6 +727,16 @@ LIBUM_SHARED_EXPORT int um_get_feature_functionality(um_state *hndl, const int d
 LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float *value);
 
 /**
+ * @brief Get uMp device handedness configuration
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @return  Negative value if an error occurred. 0 if uMp has right-handed configuration, 1 if uMp has left-handed configration.
+ */
+
+LIBUM_SHARED_EXPORT int ump_get_handedness_configuration(um_state *hndl, const int dev);
+
+/**
  *
  * @brief Pressure controller (uMc) specific commands
  */
@@ -1412,6 +1422,15 @@ public:
      */
      bool umpLEDcontrol(const bool disable, const int dev = LIBUM_USE_LAST_DEV)
      {  return ump_led_control(_handle, getDev(dev), disable ? 1 : 0) >= 0; }
+
+     /**
+     * @brief uMp handedness configuration
+     *
+     * @return nega
+     */
+     int umpHandednessConfiguration(const int dev = LIBUM_USE_LAST_DEV)
+     {  return ump_get_handedness_configuration(_handle, getDev(dev)); }
+
 
      /**
       * @brief Set lens changer position
