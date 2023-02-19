@@ -341,7 +341,7 @@ namespace {
 
         EXPECT_TRUE(mUmObj->open());
 
-        // SMCP10_FEAT_PREVENT_MOVEMENT
+        // SMCP10_FEAT_DISABLE_LEDS
         EXPECT_TRUE(mUmObj->getFeature(SMCP10_FEAT_DISABLE_LEDS, &value, mUmId));
 
         bool newValue = !value;
