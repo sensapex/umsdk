@@ -689,6 +689,19 @@ LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
  */
 
 LIBUM_SHARED_EXPORT int um_get_feature(um_state *hndl, const int dev, const int id);
+
+/**
+ * @brief Get state of a device's ext-feature
+ *
+ * Note! This API is mainly for Sensapex internal development and production purpose and
+ * should not be used unless you really know what you are doing.
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   id      Feature id
+ * @return  Negative value if an error occurred. 0 if feature disabled, 1 if enabled
+ */
+
 LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const int id);
 
 /**
@@ -706,8 +719,22 @@ LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const 
 
 LIBUM_SHARED_EXPORT int um_set_feature(um_state *hndl, const int dev,
                                          const int id, const int value);
+
+/**
+ * @brief Enable or disable a device ext-feature
+ *
+ * Note! This API is mainly for Sensapex internal development and production purpose and
+ * should not be used unless you really know what you are doing.
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   id        Feature id
+ * @param   value     0 to disable and 1 to enable feature
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
 LIBUM_SHARED_EXPORT int um_set_ext_feature(um_state *hndl, const int dev,
                                          const int id, const int value);
+
 /**
  * @brief Get state of device feature & feature mask
  *
@@ -1225,6 +1252,15 @@ public:
         return true;
     }
 
+    /**
+     * @brief Get device ext-feature state
+     *
+     * @param featureId  feature id
+     * @param[out] value value
+     * @param dev        Device ID
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
     bool getExtFeature(const int featureId, bool *value, const int dev = LIBUM_USE_LAST_DEV)
     {
         int ret;
