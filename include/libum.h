@@ -1024,12 +1024,18 @@ LIBUM_SHARED_EXPORT int ums_get_objective_configuration(um_state *hndl, const in
 #define UMS_BOWL_MAX_COUNT            24 /**< maximum number of bowls on microscope stage supported by commands below */
 #define UMS_BOWL_CONTROL_HEADER_SIZE   5 /**< ums_set/get_bowl_control command header size */
 
+/**
+ * @brief uMs Bowl Center struct
+ */
 typedef struct
 {
     float x;             /**< coordinate in µm */
     float y;             /**< coordinate in µm */
 } ums_bowl_center;
 
+/**
+ * @brief uMs Bowl Control struct
+ */
 typedef struct
 {
     int count;           /**< number of bowls under microscope stage, zero to disable feature */
@@ -1300,7 +1306,7 @@ public:
      * @param[out]  x           Pointer to an allocated buffer for x-actuator position
      * @param[out]  y           Pointer to an allocated buffer for y-actuator position
      * @param[out]  z           Pointer to an allocated buffer for z-actuator position
-     * @param[out]  w           Pointer to an allocated buffer for w-actuator position
+     * @param[out]  d           Pointer to an allocated buffer for d-actuator position
      * @param       dev         Device ID
      * @param       timeLimit   Maximum age of acceptable cache value in milliseconds. Pass
      *                          zero (LIBUM_TIMELIMIT_CACHE_ONLY) to always use cached positions.
@@ -1308,10 +1314,10 @@ public:
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool getPositions(float *x, float *y, float *z, float *w,
+    bool getPositions(float *x, float *y, float *z, float *d,
                       const int dev = LIBUM_USE_LAST_DEV,
                       const unsigned int timeLimit = LIBUM_DEF_REFRESH_TIME)
-    {   return um_get_positions(_handle, getDev(dev), timeLimit, x, y, z, w, NULL) >= 0; }
+    {   return um_get_positions(_handle, getDev(dev), timeLimit, x, y, z, d, NULL) >= 0; }
 
 
     /**
@@ -1321,18 +1327,18 @@ public:
      * @param x           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
      * @param y           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
      * @param z           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
-     * @param w           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+     * @param d           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
      * @param speed       Speed in µm/s
      * @param allAxisSimultaneously Drive mode. Defaults to one axis at a time.
      * @param max_acc     Maximum acceleration in µm/s^2
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool gotoPos(const float x, const float y, const float z, const float w,
+    bool gotoPos(const float x, const float y, const float z, const float d,
                  const float speed,  const int dev = LIBUM_USE_LAST_DEV,
                  const bool allAxisSimultaneously = false,
                  const int max_acc = 0)
-    {   return um_goto_position(_handle, getDev(dev), x, y, z, w, speed, allAxisSimultaneously, max_acc) >= 0; }
+    {   return um_goto_position(_handle, getDev(dev), x, y, z, d, speed, allAxisSimultaneously, max_acc) >= 0; }
 
     /**
      * @brief Stop device - typically movement, but also uMc calibration
