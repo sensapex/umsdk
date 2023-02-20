@@ -42,5 +42,8 @@ cmake .. -DENABLE_COVERAGE=true && cmake --build .
 # uMp tests
 ./libum_test --gtest_filter=LibumTestBasic*:LibumTestUmp* && cmake --build . --target coverage
 
-cd coverage
-echo "Code coverage report: file://$(pwd)/index.html"
+if [ $? -eq 0 ];
+then
+  cd coverage
+  echo "Code coverage report: file://$(pwd)/index.html"
+fi
