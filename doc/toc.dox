@@ -12,14 +12,14 @@ First open the port by calling #LibUm::open or #um_open.
 Obtain current device position by calling #LibUm::getPositions or #um_get_positions.
 
 Move device e.g. micromanipulator or microscope stage to a new position
-by calling #LibUm::gotoPos or #um_goto_position. 
+by calling #LibUm::gotoPos or #um_goto_position.
 
 Before terminating the program call #LibUm::close or let the object's
 destructor to call it, for C-API call #um_close.
 
 In linux systems having active firewall allow incoming UDP packages to port 55555.
 
-In windows and macOs, every applications using this SDK are asked separately 
+In windows and macOs, every applications using this SDK are asked separately
 permission to use network when application is run for the first time.
 
 Contact support@sensapex.com for assistance and feedback.

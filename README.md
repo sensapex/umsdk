@@ -48,11 +48,11 @@ http://dist.sensapex.com/misc/um-sdk/latest/
 
 ### Testing
 
-[Please see the documentation and instructions](test/README.md)
+[Please see the documentation and instructions](./test/README.md)
 
 ### Crosscompile for windows
 
-* Install `mingw-w64`-toolchain. Please see [the instructions for installation](https://www.mingw-w64.org/) 
+* Install `mingw-w64`-toolchain. Please see [the instructions for installation](https://www.mingw-w64.org/)
 * Run `scripts/cc-mingw-w64.sh` -shell script (linux):
 
 ``` bash

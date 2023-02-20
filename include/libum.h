@@ -181,6 +181,7 @@ typedef struct um_positions_s
  *
  * @param   level   Verbosity level of the message
  * @param   arg     Optional argument e.g. a file handle, optional, may be NULL
+ * @param   func    Function name from where the callback is called
  * @param   message Pointer to a static buffer containing the log print line without trailing line feed
  *
  * @return  Pointer to an error string
@@ -424,7 +425,7 @@ LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
- * @param   x, y, z, w  Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+ * @param   x, y, z, d  Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
  * @param   speed       Speed in µm/s
  * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
  * @param   max_acc     Maximum acceleration in µm/s^2
@@ -444,8 +445,8 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
- * @param   x, y, z, w  Positions, in µm, or #LIBUM_ARG_UNDEF for axis not to be moved
- * @param   speedX, speedY, speedZ, speedW  Speeds in µm/s, zero for axis not to be moved
+ * @param   x, y, z, d  Positions, in µm, or #LIBUM_ARG_UNDEF for axis not to be moved
+ * @param   speedX, speedY, speedZ, speedD  Speeds in µm/s, zero for axis not to be moved
  * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
  * @param   max_acc     Maximum acceleration in µm/s^2
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
@@ -455,7 +456,7 @@ LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
                                              const float x, const float y,
                                              const float z, const float d,
                                              const float speedX, const float speedY,
-                                             const float speedZ, const float speedW,
+                                             const float speedZ, const float speedD,
                                              const int mode, const int max_acc);
 /**
  * @brief Stop device
@@ -475,7 +476,7 @@ LIBUM_SHARED_EXPORT int um_stop(um_state * hndl, const int dev);
  * in the cache.
  *
  * @param   hndl       Pointer to session handle
- * @para    timelimit  Delay in milliseconds. Pass 0 to process only the already received messages.
+ * @param   timelimit  Delay in milliseconds. Pass 0 to process only the already received messages.
  * @return  Positive value indicates the count of received messages.
  *          Zero if no related messages was received. Negative value indicates an error.
  */
@@ -493,14 +494,14 @@ LIBUM_SHARED_EXPORT int um_receive(um_state *hndl, const int timelimit);
  * @param[out]  x           Pointer to an allocated buffer for x-actuator position
  * @param[out]  y           Pointer to an allocated buffer for y-actuator position
  * @param[out]  z           Pointer to an allocated buffer for z-actuator position
- * @param[out]  w           Pointer to an allocated buffer for w-actuator position
- * @param[out]  elapsed     Pointer to an allocated buffer for value indicating position value age in ms
+ * @param[out]  d           Pointer to an allocated buffer for d-actuator position
+ * @param[out]  elapsedptr  Pointer to an allocated buffer for value indicating position value age in ms
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const int time_limit,
-                                         float *x, float *y, float *z, float *w, int *elapsed);
+                                         float *x, float *y, float *z, float *d, int *elapsedptr);
 
 /**
  * @brief Read latest speeds and obtain time when the values were updated.
@@ -511,12 +512,12 @@ LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const in
  * @param[out]  x           Pointer to an allocated buffer for x-actuator speed
  * @param[out]  y           Pointer to an allocated buffer for y-actuator speed
  * @param[out]  z           Pointer to an allocated buffer for z-actuator speed
- * @param[out]  w           Pointer to an allocated buffer for w-actuator speed
+ * @param[out]  d           Pointer to an allocated buffer for d-actuator speed
  * @param[out]  elapsed     Pointer to an allocated buffer for value indicating position value age in ms
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
-LIBUM_SHARED_EXPORT  int um_get_speeds(um_state *hndl, const int dev, float *x, float*y, float *z, float *w, int *elapsedptr);
+LIBUM_SHARED_EXPORT  int um_get_speeds(um_state *hndl, const int dev, float *x, float*y, float *z, float *d, int *elapsed);
 
 /**
  * @brief Read position of the device into the cache.
@@ -563,11 +564,11 @@ LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char
  * @param   step_x   Step length (in µm) for X axis, negative value for backward, zero for axis not to be moved
  * @param   step_y   Step length (in µm) for Y axis, negative value for backward, zero for axis not to be moved
  * @param   step_z   Step length (in µm) for Z axis, negative value for backward, zero for axis not to be moved
- * @param   step_w   Step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
+ * @param   step_d   Step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
  * @param   speed_x  Movement speed (in µm/s) for X axis
  * @param   speed_y  Movement speed (in µm/s) for Y axis
  * @param   speed_z  Movement speed (in µm/s) for Z axis
- * @param   speed_w  Movement speed (in µm/s) for D axis
+ * @param   speed_d  Movement speed (in µm/s) for D axis
  * @param   mode     Movement mode (CLS for manipulator or microstepping mode for stage, value 0 for automatic selection)
  * @param   max_acceleration Maximum acceleration in µm/s^2. Pass 0 to use default.
  *
@@ -638,6 +639,7 @@ LIBUM_SHARED_EXPORT int um_set_param(um_state *hndl, const int dev,
  * @brief Write device's slow speed mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
@@ -648,6 +650,7 @@ LIBUM_SHARED_EXPORT int um_set_slow_speed_mode(um_state *hndl, const int dev, co
  * @brief Read device's slow speed mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
  */
 LIBUM_SHARED_EXPORT int um_get_slow_speed_mode(um_state *hndl, const int dev);
@@ -657,6 +660,7 @@ LIBUM_SHARED_EXPORT int um_get_slow_speed_mode(um_state *hndl, const int dev);
  * @brief Write device's soft start mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
@@ -667,6 +671,7 @@ LIBUM_SHARED_EXPORT int um_set_soft_start_mode(um_state *hndl, const int dev, co
  * @brief Read device's soft start mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
  */
 LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
@@ -931,7 +936,7 @@ LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
  */
 
 LIBUM_SHARED_EXPORT int ums_set_lens_position(um_state *hndl, const int dev, const int position,
-                                              const float move_away, const float dip);
+                                              const float lift, const float dip);
 
 /**
  * @brief Get lens changer position
@@ -1000,11 +1005,11 @@ typedef struct
 
 typedef struct
 {
-    int count;           /** number of bowls under microscope stage, zero to disable feature */
-    float objective_od;  /** objective outer diameter in µm */
-    float bowl_id;       /** bowl inner diameter in µm */
-    float z_limit_low;   /** max safe focus position where XY stage can be moved to any position in µm */
-    float z_limit_high;  /** max safe focus position before objective is touching the bottom of the bowl in µm */
+    int count;           /**< number of bowls under microscope stage, zero to disable feature */
+    float objective_od;  /**< objective outer diameter in µm */
+    float bowl_id;       /**< bowl inner diameter in µm */
+    float z_limit_low;   /**< max safe focus position where XY stage can be moved to any position in µm */
+    float z_limit_high;  /**< max safe focus position before objective is touching the bottom of the bowl in µm */
 } ums_bowl_control;
 
 /**
@@ -1046,18 +1051,6 @@ LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, cons
  */
 
 LIBUM_SHARED_EXPORT int ums_get_bowl_control(um_state *hndl, const int dev, ums_bowl_control *control, ums_bowl_center *centers);
-
-/**
- * @brief Set uMs bowl controls
- *
- * @param   hndl    Pointer to session handle
- * @param   dev     Device ID of UMS
- * @param   control Pointer to ums_bowl_control struct where control parameters are populated
- *
- * @return  Negative value if an error occurred. 0 if position is unknown or at center, 1-X otherwise.
- */
-
-LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *control, const ums_bowl_center *centers);
 
 /**
  * @brief get millisecond accurate epoch (cross platform compatible way without using any extra library)
@@ -1171,7 +1164,6 @@ public:
      * This is a one-time setting and will be reset after sending the next command.
      * Can be used to set the trigger for next command (e.g. goto position)
      *
-     * @param   hndl        Pointer to session handle
      * @param   optionbits  Options bit to set. Use the following flag values:
      *  SMCP1_OPT_WAIT_TRIGGER_1 Set command to be run when triggered by physical trigger line2
      *  SMCP1_OPT_PRIORITY       Prioritizes command to run first. // 0 = normal command
@@ -1186,10 +1178,10 @@ public:
      * Non-zero options are cumulated (bitwise OR'ed).
      * Call with value zero to reset all options.
      *
-     * @return  returns set flags if operation was successful, #um_error otherwise
+     * @return  returns set optionbits if operation was successful, #um_error otherwise
      */
-    int cmdOptions(const int flags)
-    {  return um_cmd_options(_handle, flags); }
+    int cmdOptions(const int optionbits)
+    {  return um_cmd_options(_handle, optionbits); }
 
     /**
      * @brief Read parameter from the device
@@ -1274,7 +1266,7 @@ public:
      * @param[out]  z           Pointer to an allocated buffer for z-actuator position
      * @param[out]  w           Pointer to an allocated buffer for w-actuator position
      * @param       dev         Device ID
-     * @param       time_limit  Maximum age of acceptable cache value in milliseconds. Pass
+     * @param       timeLimit   Maximum age of acceptable cache value in milliseconds. Pass
      *                          zero (LIBUM_TIMELIMIT_CACHE_ONLY) to always use cached positions.
      *                          Pass -1 (LIBUM_TIMELIMIT_DISABLED) to force device read.
      *
@@ -1582,7 +1574,6 @@ public:
      * @brief Set up external log print function by default the library writes
      *        to the stderr if verbose level is higher than zero.
      *
-     * @param   hndl            Pointer to session handle
      * @param   verbose_level   Verbose level (zero to disable, higher value for more detailed printouts)
      * @param   func            Pointer to the custom log print function.
      *                          May be NULL if setting only verbose level for internal log print out to stderr
