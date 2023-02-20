@@ -26,7 +26,7 @@
 #include <stdbool.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.124"
+#define VERSION_STR   "v0.125"
 #define COPYRIGHT "Copyright (c) Sensapex 2020-2023. All rights reserved"
 
 #define DEV     1
@@ -44,7 +44,7 @@ class Params
         update = UPDATE;
         address = LIBUM_DEF_BCAST_ADDRESS;
         timeout = LIBUM_DEF_TIMEOUT;
-        verbose = pressure_channel = valve_channel = reset_fluid_detector = pressure_sensor = 0;
+        loop = speed = group = verbose = pressure_channel = valve_channel = reset_fluid_detector = pressure_sensor = 0;
         lens_position = read_fluid_detectors = false;
     }
 
@@ -140,7 +140,7 @@ void parse_args(int argc, char *argv[], Params &params)
                     usage(argv);
                 break;
             case 'g':
-                if (i < argc - 1 && sscanf(argv[++i],"%d", &v) == 1 && v > 0)
+                if(i < argc-1 && sscanf(argv[++i],"%d",&v) == 1 && v > 0)
                     params.group = v;
                 else
                     usage(argv);
