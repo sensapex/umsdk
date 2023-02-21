@@ -12,12 +12,12 @@ TEMPLATE = lib
 
 DEFINES += LIBUM_LIBRARY
 
-SOURCES += libum.c 
+SOURCES += libum.c
 
-HEADERS += ../../libum.h \
+HEADERS += ../include/libum.h \
            smcp1.h
 
-INCLUDEPATH += ../..
+INCLUDEPATH += ..
 
 windows: {
     QMAKE_LINK = $$QMAKE_LINK_C

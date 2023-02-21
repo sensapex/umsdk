@@ -1,0 +1,21 @@
+@echo off
+SETLOCAL
+
+set BUILD_TYPE=Release
+echo %BUILD_TYPE%
+
+set BUILD_DIR=build
+echo %BUILD_DIR%
+
+set PROJECT_ROOT_PATH=%~dp0..
+echo %PROJECT_ROOT_PATH%
+
+set BUILD_DIR_PATH=%PROJECT_ROOT_PATH%\%BUILD_DIR%
+echo %BUILD_DIR_PATH%
+
+mkdir %BUILD_DIR_PATH%
+cd %BUILD_DIR_PATH%
+
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% %PROJECT_ROOT_PATH%
+mingw32-make clean
+mingw32-make

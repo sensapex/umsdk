@@ -2,7 +2,7 @@
  * A software development kit for Sensapex 2015 series Micromanipulators,
  * Microscope stage and Pressure controller
  *
- * Copyright (c) 2015-2021, Sensapex Oy
+ * Copyright (c) 2015-2023, Sensapex Oy
  * All rights reserved.
  *
  * This file is part of 2015 series Sensapex uMx device SDK
@@ -36,8 +36,8 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.035"
-#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2021. All rights reserved"
+#define LIBUM_VERSION_STR    "v1.400"
+#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2023. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
 #define LIBUM_ANY_IPV4_ADDR  "0.0.0.0"
@@ -199,6 +199,9 @@ const char *um_errorstr(const int ret_code)
         break;
     case LIBUM_INVALID_RESP:
         errorstr = "Invalid response";
+        break;
+    case LIBUM_PEER_ERROR:
+        errorstr = "Peer failure";
         break;
     default:
         errorstr = "Unknown error";
@@ -500,19 +503,10 @@ static int set_last_error(um_state *hndl, int code)
     if(hndl)
     {
         hndl->last_error = code;
-        switch(code)
-        {
-        case LIBUM_NO_ERROR: txt = "No error"; break;
-        case LIBUM_NOT_OPEN: txt = "Communication socket not open"; break;
-        case LIBUM_TIMEOUT:  txt = "Timeout occured"; break;
-        case LIBUM_INVALID_ARG: txt = "Invalid argument"; break;
-        case LIBUM_INVALID_DEV: txt = "Invalid dev id"; break;
-        case LIBUM_INVALID_RESP: txt = "Invalid response received"; break;
-        case LIBUM_OS_ERROR: txt = NULL; break;
-        default: txt = "Unknown error";
-        }
-        if(txt)
+        const char * txt = um_errorstr(code);
+        if (txt) {
             strcpy(hndl->errorstr_buffer, txt);
+        }
     }
     return code;
 }
@@ -750,7 +744,7 @@ static int um_set_drive_status(um_state *hndl, const int dev, const int value)
 
 
 #if defined(_WINDOWS) || (defined(__APPLE__) && defined(__MACH__))
-static bool isnanf(const float arg)
+static int isnanf(const float arg)
 {   return isnan(arg); }
 #endif
 
@@ -1285,6 +1279,11 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
         // TODO request to us - at least ping or version query?
         um_log_print(hndl, 2,__PRETTY_FUNCTION__, "unsupported request type %d", type);
     }
+
+    if(options&SMCP1_OPT_ERROR)
+    {
+        return set_last_error(hndl, LIBUM_PEER_ERROR);
+    }
     return 0;
 }
 
@@ -1474,10 +1473,10 @@ static int um_send_msg(um_state *hndl, const int dev, const int cmd,
             if(ret == 1)
                 ack_received = true;
             // If not expecting a response, getting ACK is enough.
-            if(!respc && ret == 1)
+            if((!respc && !resp_option_requested) && ret == 1)
                 return 0;
             // Expecting response
-            if(respc && ret == 2)
+            if((respc || resp_option_requested) && ret == 2)
             {
                 // A notification may be received between the request and response,
                 // a more pedantic response validation is needed.
@@ -1487,8 +1486,13 @@ static int um_send_msg(um_state *hndl, const int dev, const int cmd,
                     continue;
                 if(ntohs(resp_header->sub_blocks) < 1)
                 {
-                    um_log_print(hndl, 2,__PRETTY_FUNCTION__, "empty response");
-                    return set_last_error(hndl, LIBUM_INVALID_RESP);
+                    if(ntohl(resp_header->options) & SMCP1_OPT_ERROR) {
+                        um_log_print(hndl, 2,__PRETTY_FUNCTION__, "peer error");
+                        return set_last_error(hndl, LIBUM_PEER_ERROR);
+                    } else {
+                        um_log_print(hndl, 2,__PRETTY_FUNCTION__, "empty response");
+                        return set_last_error(hndl, LIBUM_INVALID_RESP);
+                    }
                 }
                 resp_data_size = ntohs(resp_sub_header->data_size);
                 resp_data_type = ntohs(resp_sub_header->data_type);
@@ -1595,6 +1599,16 @@ int ump_get_axis_angle(um_state *hndl, const int dev, float *value)
         return ret;
     if(value)
         *value = (float)resp/10.0f;
+    return resp;
+}
+
+int ump_get_handedness_configuration(um_state *hndl, const int dev)
+{
+    int config;
+    int resp = um_get_param(hndl, dev, SMCP1_PARAM_AXIS_HEAD_CONFIGURATION, &config);
+    if(resp >= 0) {
+        resp = config & (1 << 1) ? 1 : 0;
+    }
     return resp;
 }
 
