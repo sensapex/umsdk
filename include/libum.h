@@ -44,7 +44,6 @@
 #  endif
 #  define SOCKOPT_CAST    (char *)          /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
 #  define socklen_t       int               /**< cross platform trick, socklen_t is not defined in windows */
-#  define size_t          int               /**< cross platform trick, winsock use int instead of size_t e.g. in recvfrom */
 #  define getLastError()  WSAGetLastError() /**< cross platform trick, using winsocket function instead of errno */
 #  define timeoutError    WSAETIMEDOUT      /**< cross platform trick, detect timeout with winsocket error number */
 typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
