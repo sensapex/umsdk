@@ -44,7 +44,7 @@ build-mingw.bat
 ```
 
 Precompiled windows binaries can be found in
-http://dist.sensapex.com/misc/um-sdk/latest/
+https://github.com/sensapex/umsdk/releases/tag/v1.400
 
 ### Testing
 
