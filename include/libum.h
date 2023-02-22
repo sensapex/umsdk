@@ -44,7 +44,6 @@
 #  endif
 #  define SOCKOPT_CAST    (char *)          /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
 #  define socklen_t       int               /**< cross platform trick, socklen_t is not defined in windows */
-#  define size_t          int               /**< cross platform trick, winsock use int instead of size_t e.g. in recvfrom */
 #  define getLastError()  WSAGetLastError() /**< cross platform trick, using winsocket function instead of errno */
 #  define timeoutError    WSAETIMEDOUT      /**< cross platform trick, detect timeout with winsocket error number */
 typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
@@ -208,7 +207,7 @@ typedef struct um_state_s
     int udp_port;                                       /**< Target UDP port */
     int local_port;                                     /**< Local UDP port */
     int last_status[LIBUM_MAX_DEVS];                    /**< Status cache per device */
-    int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state per device #LIBUM_DRIVE_BUSY, #LIBUM_DRIVE_COMPLETED or #LIBUM_DRIVE_FAILED */
+    int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state per device #LIBUM_POS_DRIVE_BUSY, #LIBUM_POS_DRIVE_COMPLETED or #LIBUM_POS_DRIVE_FAILED */
     unsigned short drive_status_id[LIBUM_MAX_DEVS];     /**< Message ids of the above notifications, used to detect duplicates */
     IPADDR addresses[LIBUM_MAX_DEVS];                   /**< Address cache per device */
     um_positions last_positions[LIBUM_MAX_DEVS];        /**< Position cache per device */

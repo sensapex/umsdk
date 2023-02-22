@@ -609,5 +609,3 @@ typedef struct
 #endif
 
 #endif // SMCP1_H
-
-

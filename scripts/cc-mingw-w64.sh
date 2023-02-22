@@ -12,7 +12,7 @@ function crossCompile() {
     # Validate arduments
     if [[ ($TYPE == 'Release' || $TYPE == 'Debug') && ($ARC == 'x64' || $ARC == 'i686') ]]
     then
-        BUILD_DIR="build-mingw-${ARC}-${BUILD_TYPE}"
+        BUILD_DIR="build-mingw-${ARC}-${TYPE}"
     else
         #invalid argument
         return 1;

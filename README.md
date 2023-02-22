@@ -50,7 +50,7 @@ http://dist.sensapex.com/misc/um-sdk/latest/
 
 [Please see the documentation and instructions](./test/README.md)
 
-### Crosscompile for windows
+### Crosscompile for Windows
 
 * Install `mingw-w64`-toolchain. Please see [the instructions for installation](https://www.mingw-w64.org/)
 * Run `scripts/cc-mingw-w64.sh` -shell script (linux):
@@ -73,9 +73,15 @@ http://dist.sensapex.com/misc/um-sdk/latest/doc/ .
 
 ### Changelog
 
-umsdk is new major development branch that is based on the legacy ump-sdk. Main differences are:
+#### Version 1.400
 
-- Support form CMake
+- New API to read ump handedness configuration
+- Bug fixes
+- Maintenance improvements
+
+#### Older versions
+
+umsdk is new major development branch that is based on the legacy ump-sdk. Main differences are:
 
 - function names are changed from `ump_foo_bar` to `um_foo_bar` if function is usable for multiple
   type of Sensapex devices i.e. not only manipulators (uMp).
