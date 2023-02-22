@@ -762,7 +762,7 @@ LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @return  Negative value if an error occurred. 0 if uMp has right-handed configuration, 1 if uMp has left-handed configration.
+ * @return  Negative value if an error occurred. 1 if uMp has right-handed configuration, 0 if uMp has left-handed configration.
  */
 
 LIBUM_SHARED_EXPORT int ump_get_handedness_configuration(um_state *hndl, const int dev);
@@ -1459,7 +1459,8 @@ public:
      /**
      * @brief uMp handedness configuration
      *
-     * @return nega
+     * @param   dev     Device ID
+     * @return  Negative value if an error occurred. 1 if uMp has right-handed configuration, 0 if uMp has left-handed configration.
      */
      int umpHandednessConfiguration(const int dev = LIBUM_USE_LAST_DEV)
      {  return ump_get_handedness_configuration(_handle, getDev(dev)); }
