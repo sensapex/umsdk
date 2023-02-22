@@ -1,9 +1,9 @@
 /**
  * @file    libum.h
  * @author  Sensapex <support@sensapex.com>
- * @date    29 May 2020
+ * @date    19 Feb 2023
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
- * @copyright   Copyright (c) 2016-2021 Sensapex. All rights reserved
+ * @copyright   Copyright (c) 2016-2023 Sensapex. All rights reserved
  *
  * The Sensapex uM product family SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
@@ -39,11 +39,11 @@
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 #  include <windows.h>
-#  include <math.h>
-#  define SOCKOPT_CAST   (char *)           /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
+#  ifndef EADDRINUSE
+#    define EADDRINUSE    WSAEADDRINUSE     /**< cross platform trick, EADDRINUSE is not defined in windows */
+#  endif
+#  define SOCKOPT_CAST    (char *)          /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
 #  define socklen_t       int               /**< cross platform trick, socklen_t is not defined in windows */
-#  define size_t          int               /**< cross platform trick, winsock use int instead of size_t e.g. in recvfrom */
-#  define sscanf          sscanf_s          /**< cross platform trick, get rid of unsafe compiler error */
 #  define getLastError()  WSAGetLastError() /**< cross platform trick, using winsocket function instead of errno */
 #  define timeoutError    WSAETIMEDOUT      /**< cross platform trick, detect timeout with winsocket error number */
 typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
@@ -60,7 +60,6 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 # endif
 #else // !_WINDOWS
 # include <unistd.h>
-# include <math.h>
 # include <arpa/inet.h>
 # include <sys/errno.h>
 typedef int SOCKET;                         /**< cross platform trick, int instead of SOCKET (defined by winsock) in posix systems */
@@ -73,6 +72,9 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 # define SOCKOPT_CAST                       /**< cross platform trick, non-standard typecast not needed in posix systems */
 # define LIBUM_SHARED_EXPORT                /**< cross platform trick, declspec for windows DLL, empty for posix systems */
 #endif
+
+#include <string.h>
+#include <math.h>
 
 #ifdef _WINDOWS
 # ifndef LIBUM_SHARED_DO_NOT_EXPORT
@@ -101,6 +103,7 @@ typedef enum um_error_e
     LIBUM_INVALID_ARG  = -4,  /**< Illegal command argument */
     LIBUM_INVALID_DEV  = -5,  /**< Illegal Device Id */
     LIBUM_INVALID_RESP = -6,  /**< Illegal response received */
+    LIBUM_PEER_ERROR   = -7,  /**< Peer partner (eg umx-device) was not able handle a request */
 } um_error;
 
 /**
@@ -177,6 +180,7 @@ typedef struct um_positions_s
  *
  * @param   level   Verbosity level of the message
  * @param   arg     Optional argument e.g. a file handle, optional, may be NULL
+ * @param   func    Function name from where the callback is called
  * @param   message Pointer to a static buffer containing the log print line without trailing line feed
  *
  * @return  Pointer to an error string
@@ -203,7 +207,7 @@ typedef struct um_state_s
     int udp_port;                                       /**< Target UDP port */
     int local_port;                                     /**< Local UDP port */
     int last_status[LIBUM_MAX_DEVS];                    /**< Status cache per device */
-    int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state per device #LIBUM_DRIVE_BUSY, #LIBUM_DRIVE_COMPLETED or #LIBUM_DRIVE_FAILED */
+    int drive_status[LIBUM_MAX_DEVS];                   /**< Position drive state per device #LIBUM_POS_DRIVE_BUSY, #LIBUM_POS_DRIVE_COMPLETED or #LIBUM_POS_DRIVE_FAILED */
     unsigned short drive_status_id[LIBUM_MAX_DEVS];     /**< Message ids of the above notifications, used to detect duplicates */
     IPADDR addresses[LIBUM_MAX_DEVS];                   /**< Address cache per device */
     um_positions last_positions[LIBUM_MAX_DEVS];        /**< Position cache per device */
@@ -420,7 +424,7 @@ LIBUM_SHARED_EXPORT int ump_led_control(um_state *hndl, const int dev, const int
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
- * @param   x, y, z, w  Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+ * @param   x, y, z, d  Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
  * @param   speed       Speed in µm/s
  * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
  * @param   max_acc     Maximum acceleration in µm/s^2
@@ -440,8 +444,8 @@ LIBUM_SHARED_EXPORT int um_goto_position(um_state *hndl, const int dev,
  *
  * @param   hndl        Pointer to session handle
  * @param   dev         Device ID
- * @param   x, y, z, w  Positions, in µm, or #LIBUM_ARG_UNDEF for axis not to be moved
- * @param   speedX, speedY, speedZ, speedW  Speeds in µm/s, zero for axis not to be moved
+ * @param   x, y, z, d  Positions, in µm, or #LIBUM_ARG_UNDEF for axis not to be moved
+ * @param   speedX, speedY, speedZ, speedD  Speeds in µm/s, zero for axis not to be moved
  * @param   mode        0 = one-by-one, 1 = move all axis simultaneously.
  * @param   max_acc     Maximum acceleration in µm/s^2
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
@@ -451,7 +455,7 @@ LIBUM_SHARED_EXPORT int um_goto_position_ext(um_state *hndl, const int dev,
                                              const float x, const float y,
                                              const float z, const float d,
                                              const float speedX, const float speedY,
-                                             const float speedZ, const float speedW,
+                                             const float speedZ, const float speedD,
                                              const int mode, const int max_acc);
 /**
  * @brief Stop device
@@ -471,7 +475,7 @@ LIBUM_SHARED_EXPORT int um_stop(um_state * hndl, const int dev);
  * in the cache.
  *
  * @param   hndl       Pointer to session handle
- * @para    timelimit  Delay in milliseconds. Pass 0 to process only the already received messages.
+ * @param   timelimit  Delay in milliseconds. Pass 0 to process only the already received messages.
  * @return  Positive value indicates the count of received messages.
  *          Zero if no related messages was received. Negative value indicates an error.
  */
@@ -489,14 +493,14 @@ LIBUM_SHARED_EXPORT int um_receive(um_state *hndl, const int timelimit);
  * @param[out]  x           Pointer to an allocated buffer for x-actuator position
  * @param[out]  y           Pointer to an allocated buffer for y-actuator position
  * @param[out]  z           Pointer to an allocated buffer for z-actuator position
- * @param[out]  w           Pointer to an allocated buffer for w-actuator position
- * @param[out]  elapsed     Pointer to an allocated buffer for value indicating position value age in ms
+ * @param[out]  d           Pointer to an allocated buffer for d-actuator position
+ * @param[out]  elapsedptr  Pointer to an allocated buffer for value indicating position value age in ms
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
  */
 
 LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const int time_limit,
-                                         float *x, float *y, float *z, float *w, int *elapsed);
+                                         float *x, float *y, float *z, float *d, int *elapsedptr);
 
 /**
  * @brief Read latest speeds and obtain time when the values were updated.
@@ -507,12 +511,12 @@ LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const in
  * @param[out]  x           Pointer to an allocated buffer for x-actuator speed
  * @param[out]  y           Pointer to an allocated buffer for y-actuator speed
  * @param[out]  z           Pointer to an allocated buffer for z-actuator speed
- * @param[out]  w           Pointer to an allocated buffer for w-actuator speed
+ * @param[out]  d           Pointer to an allocated buffer for d-actuator speed
  * @param[out]  elapsed     Pointer to an allocated buffer for value indicating position value age in ms
  * @return  Negative value if an error occurred. Zero or positive value otherwise.
  */
 
-LIBUM_SHARED_EXPORT  int um_get_speeds(um_state *hndl, const int dev, float *x, float*y, float *z, float *w, int *elapsedptr);
+LIBUM_SHARED_EXPORT  int um_get_speeds(um_state *hndl, const int dev, float *x, float*y, float *z, float *d, int *elapsed);
 
 /**
  * @brief Read position of the device into the cache.
@@ -559,11 +563,11 @@ LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char
  * @param   step_x   Step length (in µm) for X axis, negative value for backward, zero for axis not to be moved
  * @param   step_y   Step length (in µm) for Y axis, negative value for backward, zero for axis not to be moved
  * @param   step_z   Step length (in µm) for Z axis, negative value for backward, zero for axis not to be moved
- * @param   step_w   Step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
+ * @param   step_d   Step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
  * @param   speed_x  Movement speed (in µm/s) for X axis
  * @param   speed_y  Movement speed (in µm/s) for Y axis
  * @param   speed_z  Movement speed (in µm/s) for Z axis
- * @param   speed_w  Movement speed (in µm/s) for D axis
+ * @param   speed_d  Movement speed (in µm/s) for D axis
  * @param   mode     Movement mode (CLS for manipulator or microstepping mode for stage, value 0 for automatic selection)
  * @param   max_acceleration Maximum acceleration in µm/s^2. Pass 0 to use default.
  *
@@ -634,6 +638,7 @@ LIBUM_SHARED_EXPORT int um_set_param(um_state *hndl, const int dev,
  * @brief Write device's slow speed mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
@@ -644,6 +649,7 @@ LIBUM_SHARED_EXPORT int um_set_slow_speed_mode(um_state *hndl, const int dev, co
  * @brief Read device's slow speed mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
  */
 LIBUM_SHARED_EXPORT int um_get_slow_speed_mode(um_state *hndl, const int dev);
@@ -653,6 +659,7 @@ LIBUM_SHARED_EXPORT int um_get_slow_speed_mode(um_state *hndl, const int dev);
  * @brief Write device's soft start mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @param   activated On/off settings to enable/disable slow speed mode (0=deactivated, 1 = activated)
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
@@ -663,6 +670,7 @@ LIBUM_SHARED_EXPORT int um_set_soft_start_mode(um_state *hndl, const int dev, co
  * @brief Read device's soft start mode
  *
  * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
  * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
  */
 LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
@@ -680,6 +688,19 @@ LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
  */
 
 LIBUM_SHARED_EXPORT int um_get_feature(um_state *hndl, const int dev, const int id);
+
+/**
+ * @brief Get state of a device's ext-feature
+ *
+ * Note! This API is mainly for Sensapex internal development and production purpose and
+ * should not be used unless you really know what you are doing.
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   id      Feature id
+ * @return  Negative value if an error occurred. 0 if feature disabled, 1 if enabled
+ */
+
 LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const int id);
 
 /**
@@ -697,8 +718,22 @@ LIBUM_SHARED_EXPORT int um_get_ext_feature(um_state *hndl, const int dev, const 
 
 LIBUM_SHARED_EXPORT int um_set_feature(um_state *hndl, const int dev,
                                          const int id, const int value);
+
+/**
+ * @brief Enable or disable a device ext-feature
+ *
+ * Note! This API is mainly for Sensapex internal development and production purpose and
+ * should not be used unless you really know what you are doing.
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   id        Feature id
+ * @param   value     0 to disable and 1 to enable feature
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
 LIBUM_SHARED_EXPORT int um_set_ext_feature(um_state *hndl, const int dev,
                                          const int id, const int value);
+
 /**
  * @brief Get state of device feature & feature mask
  *
@@ -721,6 +756,16 @@ LIBUM_SHARED_EXPORT int um_get_feature_functionality(um_state *hndl, const int d
  */
 
 LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float *value);
+
+/**
+ * @brief Get uMp device handedness configuration
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @return  Negative value if an error occurred. 1 if uMp has right-handed configuration, 0 if uMp has left-handed configration.
+ */
+
+LIBUM_SHARED_EXPORT int ump_get_handedness_configuration(um_state *hndl, const int dev);
 
 /**
  *
@@ -917,7 +962,7 @@ LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
  */
 
 LIBUM_SHARED_EXPORT int ums_set_lens_position(um_state *hndl, const int dev, const int position,
-                                              const float move_away, const float dip);
+                                              const float lift, const float dip);
 
 /**
  * @brief Get lens changer position
@@ -978,19 +1023,25 @@ LIBUM_SHARED_EXPORT int ums_get_objective_configuration(um_state *hndl, const in
 #define UMS_BOWL_MAX_COUNT            24 /**< maximum number of bowls on microscope stage supported by commands below */
 #define UMS_BOWL_CONTROL_HEADER_SIZE   5 /**< ums_set/get_bowl_control command header size */
 
+/**
+ * @brief uMs Bowl Center struct
+ */
 typedef struct
 {
     float x;             /**< coordinate in µm */
     float y;             /**< coordinate in µm */
 } ums_bowl_center;
 
+/**
+ * @brief uMs Bowl Control struct
+ */
 typedef struct
 {
-    int count;           /** number of bowls under microscope stage, zero to disable feature */
-    float objective_od;  /** objective outer diameter in µm */
-    float bowl_id;       /** bowl inner diameter in µm */
-    float z_limit_low;   /** max safe focus position where XY stage can be moved to any position in µm */
-    float z_limit_high;  /** max safe focus position before objective is touching the bottom of the bowl in µm */
+    int count;           /**< number of bowls under microscope stage, zero to disable feature */
+    float objective_od;  /**< objective outer diameter in µm */
+    float bowl_id;       /**< bowl inner diameter in µm */
+    float z_limit_low;   /**< max safe focus position where XY stage can be moved to any position in µm */
+    float z_limit_high;  /**< max safe focus position before objective is touching the bottom of the bowl in µm */
 } ums_bowl_control;
 
 /**
@@ -1032,18 +1083,6 @@ LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, cons
  */
 
 LIBUM_SHARED_EXPORT int ums_get_bowl_control(um_state *hndl, const int dev, ums_bowl_control *control, ums_bowl_center *centers);
-
-/**
- * @brief Set uMs bowl controls
- *
- * @param   hndl    Pointer to session handle
- * @param   dev     Device ID of UMS
- * @param   control Pointer to ums_bowl_control struct where control parameters are populated
- *
- * @return  Negative value if an error occurred. 0 if position is unknown or at center, 1-X otherwise.
- */
-
-LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *control, const ums_bowl_center *centers);
 
 /**
  * @brief get millisecond accurate epoch (cross platform compatible way without using any extra library)
@@ -1090,8 +1129,15 @@ public:
      * @return `true` if operation was successful, `false` otherwise
      */
     bool open(const char *broadcastAddress = LIBUM_DEF_BCAST_ADDRESS, const unsigned int timeout = LIBUM_DEF_TIMEOUT, const int group = 0)
-    {	return (_handle = um_open(broadcastAddress, timeout, group)) != NULL; }
-
+    {
+        if (!_handle) {
+            return (_handle = um_open(broadcastAddress, timeout, group)) != NULL;
+        } else {
+            _handle->last_error = LIBUM_NOT_OPEN;
+            strcpy(_handle->errorstr_buffer, "Communication socket not open");
+            return false;
+        }
+    }
     /**
      * @brief Check if socket is open for device communication
      * @return `true` if this instance of `LibUm` holds an open UDP socket.
@@ -1150,7 +1196,6 @@ public:
      * This is a one-time setting and will be reset after sending the next command.
      * Can be used to set the trigger for next command (e.g. goto position)
      *
-     * @param   hndl        Pointer to session handle
      * @param   optionbits  Options bit to set. Use the following flag values:
      *  SMCP1_OPT_WAIT_TRIGGER_1 Set command to be run when triggered by physical trigger line2
      *  SMCP1_OPT_PRIORITY       Prioritizes command to run first. // 0 = normal command
@@ -1165,10 +1210,10 @@ public:
      * Non-zero options are cumulated (bitwise OR'ed).
      * Call with value zero to reset all options.
      *
-     * @return  returns set flags
+     * @return  returns set optionbits if operation was successful, #um_error otherwise
      */
-    int cmdOptions(const int flags)
-    {  return um_cmd_options(_handle, flags); }
+    int cmdOptions(const int optionbits)
+    {  return um_cmd_options(_handle, optionbits); }
 
     /**
      * @brief Read parameter from the device
@@ -1191,7 +1236,7 @@ public:
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool setParam(const int paramId, const short value, const int dev = LIBUM_USE_LAST_DEV)
+    bool setParam(const int paramId, const int value, const int dev = LIBUM_USE_LAST_DEV)
     {	return  um_set_param(_handle, getDev(dev), paramId, value) >= 0; }
 
     /**
@@ -1212,6 +1257,15 @@ public:
         return true;
     }
 
+    /**
+     * @brief Get device ext-feature state
+     *
+     * @param featureId  feature id
+     * @param[out] value value
+     * @param dev        Device ID
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
     bool getExtFeature(const int featureId, bool *value, const int dev = LIBUM_USE_LAST_DEV)
     {
         int ret;
@@ -1251,18 +1305,18 @@ public:
      * @param[out]  x           Pointer to an allocated buffer for x-actuator position
      * @param[out]  y           Pointer to an allocated buffer for y-actuator position
      * @param[out]  z           Pointer to an allocated buffer for z-actuator position
-     * @param[out]  w           Pointer to an allocated buffer for w-actuator position
+     * @param[out]  d           Pointer to an allocated buffer for d-actuator position
      * @param       dev         Device ID
-     * @param       time_limit  Maximum age of acceptable cache value in milliseconds. Pass
+     * @param       timeLimit   Maximum age of acceptable cache value in milliseconds. Pass
      *                          zero (LIBUM_TIMELIMIT_CACHE_ONLY) to always use cached positions.
      *                          Pass -1 (LIBUM_TIMELIMIT_DISABLED) to force device read.
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool getPositions(float *x, float *y, float *z, float *w,
+    bool getPositions(float *x, float *y, float *z, float *d,
                       const int dev = LIBUM_USE_LAST_DEV,
                       const unsigned int timeLimit = LIBUM_DEF_REFRESH_TIME)
-    {   return um_get_positions(_handle, getDev(dev), timeLimit, x, y, z, w, NULL) >= 0; }
+    {   return um_get_positions(_handle, getDev(dev), timeLimit, x, y, z, d, NULL) >= 0; }
 
 
     /**
@@ -1272,18 +1326,18 @@ public:
      * @param x           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
      * @param y           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
      * @param z           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
-     * @param w           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
+     * @param d           Positions in µm, LIBUM_ARG_UNDEF for axis not to be moved
      * @param speed       Speed in µm/s
      * @param allAxisSimultaneously Drive mode. Defaults to one axis at a time.
      * @param max_acc     Maximum acceleration in µm/s^2
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool gotoPos(const float x, const float y, const float z, const float w,
+    bool gotoPos(const float x, const float y, const float z, const float d,
                  const float speed,  const int dev = LIBUM_USE_LAST_DEV,
                  const bool allAxisSimultaneously = false,
                  const int max_acc = 0)
-    {   return um_goto_position(_handle, getDev(dev), x, y, z, w, speed, allAxisSimultaneously, max_acc) >= 0; }
+    {   return um_goto_position(_handle, getDev(dev), x, y, z, d, speed, allAxisSimultaneously, max_acc) >= 0; }
 
     /**
      * @brief Stop device - typically movement, but also uMc calibration
@@ -1329,7 +1383,7 @@ public:
      * @param[out] devs   Pointer to list of devices found
      * @param      size     Size of the above buffer (number of integers)
      *
-     * @return number of found devices
+     * @return Negative value if an error occurred, number of found devices otherwise
      */
     int getDeviceList(int *devs = NULL, const int size = 0)
     {   return um_get_device_list(_handle, devs, size); }
@@ -1400,7 +1454,16 @@ public:
      * @return `true` if operation was successful, `false` otherwise
      */
      bool umpLEDcontrol(const bool disable, const int dev = LIBUM_USE_LAST_DEV)
-     {  return ump_led_control(_handle, getDev(dev), disable) >= 0; }
+     {  return ump_led_control(_handle, getDev(dev), disable ? 1 : 0) >= 0; }
+
+     /**
+     * @brief uMp handedness configuration
+     *
+     * @param   dev     Device ID
+     * @return  Negative value if an error occurred. 1 if uMp has right-handed configuration, 0 if uMp has left-handed configration.
+     */
+     int umpHandednessConfiguration(const int dev = LIBUM_USE_LAST_DEV)
+     {  return ump_get_handedness_configuration(_handle, getDev(dev)); }
 
 
      /**
@@ -1553,16 +1616,15 @@ public:
      * @brief Set up external log print function by default the library writes
      *        to the stderr if verbose level is higher than zero.
      *
-     * @param   hndl            Pointer to session handle
      * @param   verbose_level   Verbose level (zero to disable, higher value for more detailed printouts)
      * @param   func            Pointer to the custom log print function.
      *                          May be NULL if setting only verbose level for internal log print out to stderr
      * @param   arg             Pointer argument to be looped to the above function may be e.g. a typecasted
      *                          file handle, optional, may be NULL
-     * @return  Negative value if an error occurred. Zero or positive value otherwise
+     * @return  `true` if operation was successful, `false` otherwise
      */
     bool setLogCallback(const int verbose_level, um_log_print_func func, const void *arg)
-    {	return um_set_log_func(_handle, verbose_level, func, arg); }
+    {	return um_set_log_func(_handle, verbose_level, func, arg) >= 0 ? true : false; }
 
     /**
      * @brief Process incoming messages (may update status or location cache)

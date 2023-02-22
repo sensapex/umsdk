@@ -3,7 +3,7 @@
  * Sensapex microManipulator Control Protocol v1 definitions
  * Public SDK version.
  *
- * Copyright (c) 2015-2020 Sensapex. All rights reserved
+ * Copyright (c) 2015-2023 Sensapex. All rights reserved
  *
  * The Sensapex micromanipulator SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
@@ -478,7 +478,10 @@ typedef enum
     SMCP1_PARAM_MEM_SPEED               = 2,
     SMCP1_PARAM_DEV_ID                  = 3,
     SMCP1_PARAM_VIRTUALX_ANGLE          = 4, // angle value degrees*10
-    // Read only range via normal SDK
+
+    SMCP1_PARAM_AXIS_HEAD_CONFIGURATION = 0x80, // bits 0-4 binded to actuators. bit values (0==normal, 1==inverted)
+
+    // Read only range
     SMCP1_PARAM_HW_ID                   = 0x101,
     SMCP1_PARAM_SN                      = 0x102,
     SMCP1_PARAM_EOW                     = 0x103,
@@ -492,9 +495,9 @@ typedef enum
     SMCP10_FEAT_INVERT_VIRTUAL_AXIS     = 1,
     SMCP10_FEAT_TRANSITION_LIMITS       = 2,
     SMCP10_FEAT_W_AS_VIRTUAL_AXIS       = 3,
-    SMCP10_FEAT_PREVENT_MOVEMENT        = 4,
 
-    SMCP10_FEAT_DISABLE_LEDS            = 16
+    SMCP10_FEAT_DISABLE_LEDS            = 16,
+    SMCP10_FEAT_PREVENT_MOVEMENT        = 17
 } smcp1_features;
 
 typedef enum
@@ -606,5 +609,3 @@ typedef struct
 #endif
 
 #endif // SMCP1_H
-
-
