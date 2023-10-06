@@ -36,7 +36,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.400"
+#define LIBUM_VERSION_STR    "v1.410"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2023. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -1680,6 +1680,29 @@ int um_take_step(um_state *hndl, const int dev,
     if(max_acc)
         args[argc++] = max_acc;
     return um_cmd(hndl, dev, SMCP1_CMD_TAKE_STEP, argc, args);
+}
+
+int pm_take_raw_step(um_state *hndl, const int dev,
+                    const unsigned int freq_x, const unsigned int freq_y, const unsigned int freq_z,
+                    const int steps_x, const int steps_y, const int steps_z,
+                    const int microsteps_x, const int microsteps_y, const int microsteps_z)
+{
+    int args[10], argc = 0;
+    if(!hndl) {
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    }
+
+    args[argc++] = freq_x;
+    args[argc++] = freq_y;
+    args[argc++] = freq_z;
+    args[argc++] = steps_x;
+    args[argc++] = steps_y;
+    args[argc++] = steps_z;
+    args[argc++] = microsteps_x;
+    args[argc++] = microsteps_y;
+    args[argc++] = microsteps_z;
+
+    return um_cmd(hndl, dev, SMCP1_CMD_TAKE_RAW_STEP, argc, args);
 }
 
 int um_get_feature(um_state *hndl, const int dev, const int feature_id)

@@ -580,6 +580,29 @@ LIBUM_SHARED_EXPORT int um_take_step(um_state *hndl, const int dev,
                                      const int mode, const int max_acceleration);
 
 /**
+ * @brief Take a step (relative movement from current position)
+ *
+ * @param   hndl     Pointer to session handle
+ * @param   dev      Device ID
+ * @param   freq_x   Wafeform frequecy for X axis
+ * @param   freq_y   Wafeform frequecy for Y axis
+ * @param   freq_z   Wafeform frequecy for Z axis
+ * @param   steps_x  The number of full waveforms for X axis
+ * @param   steps_y  The number of full waveforms for Y axis
+ * @param   steps_z  The number of full waveforms for Z axis
+ * @param   microsteps_x  The number of microsteps for X axis
+ * @param   microsteps_y  The number of microsteps for Y axis
+ * @param   microsteps_z  The number of microsteps for Z axis
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int pm_take_raw_step(um_state *hndl, const int dev,
+                                     const unsigned int freq_x, const unsigned int freq_y, const unsigned int freq_z,
+                                     const int steps_x, const int steps_y, const int steps_z,
+                                     const int microsteps_x, const int microsteps_y, const int microsteps_z);
+
+/**
  * @brief Set options for the next command to be sent to a manipulator.
  * This is a one-time setting and will be reset after sending the next command.
  * Can be used to set the trigger for next command (e.g. goto position)

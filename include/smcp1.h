@@ -253,6 +253,23 @@ typedef enum
     //  - 0 == A feature is not functional (disabled or/and not activated)
     SMCP1_CMD_GET_FEATURE_FUNCTIONALITY   = 49,
 
+
+    // PM extensions
+    // Take a raw (open loop) waveform steps
+    // Arguments:
+    //  - freq_x   Wafeform frequecy for X axis
+    //  - freq_y   Wafeform frequecy for Y axis
+    //  - freq_z   Wafeform frequecy for Z axis
+    //  - steps_x  The number of full waveforms for X axis
+    //  - steps_y  The number of full waveforms for Y axis
+    //  - steps_z  The number of full waveforms for Z axis
+    //  - microsteps_x  The number of microsteps for X axis
+    //  - microsteps_y  The number of microsteps for Y axis
+    //  - microsteps_z  The number of microsteps for Z axis
+    // Response:
+    //  - None
+    SMCP1_CMD_TAKE_RAW_STEP               = 59,
+
     // uMs extensions
     // Change microstep resolution mode without causing (intentional) movement
     // Arguments:
