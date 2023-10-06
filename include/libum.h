@@ -1,7 +1,7 @@
 /**
  * @file    libum.h
  * @author  Sensapex <support@sensapex.com>
- * @date    19 Feb 2023
+ * @date    6 Oct 2023
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
  * @copyright   Copyright (c) 2016-2023 Sensapex. All rights reserved
  *

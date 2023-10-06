@@ -6,7 +6,7 @@ namespace {
     {
         const char *version = um_get_version();
         // Expect two strings not to be equal.
-        EXPECT_STREQ("v1.400", version);
+        EXPECT_STREQ("v1.410", version);
     }
 
     TEST(LibumTestBasicC, test_um_get_timestamp_us)
@@ -78,4 +78,17 @@ namespace {
         }
     }
 
+    TEST(LibumTestBasicC, pm_raw_step)
+    {
+        um_state *umHandle = um_open(LIBUM_DEF_BCAST_ADDRESS, 100, 0);
+        EXPECT_NE(nullptr, umHandle);
+
+        int result = pm_take_raw_step(umHandle, 1, 1000, 1000, 1000, 10, 10, 10, 0, 0, 0);
+        EXPECT_GE(0, result);
+
+        if (umHandle) {
+            um_close(umHandle);
+            umHandle = NULL;
+        }
+    }
 }
