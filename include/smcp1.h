@@ -3,7 +3,7 @@
  * Sensapex microManipulator Control Protocol v1 definitions
  * Public SDK version.
  *
- * Copyright (c) 2015-2023 Sensapex. All rights reserved
+ * Copyright (c) 2015-2024 Sensapex. All rights reserved
  *
  * The Sensapex micromanipulator SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
@@ -496,6 +496,8 @@ typedef enum
     SMCP10_FEAT_TRANSITION_LIMITS       = 2,
     SMCP10_FEAT_W_AS_VIRTUAL_AXIS       = 3,
 
+    // uMa features at bits 13-15
+    SMCP10_FEAT_UMA_ENABLED             = 13,
     SMCP10_FEAT_DISABLE_LEDS            = 16,
     SMCP10_FEAT_PREVENT_MOVEMENT        = 17
 } smcp1_features;

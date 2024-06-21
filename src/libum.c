@@ -36,8 +36,8 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.400"
-#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2023. All rights reserved"
+#define LIBUM_VERSION_STR    "v1.401"
+#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2024. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
 #define LIBUM_ANY_IPV4_ADDR  "0.0.0.0"
@@ -1957,6 +1957,49 @@ int um_clear_device_list(um_state *hndl)
         }
     }
     return found;
+}
+
+int um_set_uma_reg(um_state *hndl, const int dev, const int addr, const int value)
+{
+    int args[2];
+    if(!hndl)
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    args[0] = addr;
+    args[1] = value;
+    return um_cmd(hndl, dev, SMCP1_SET_UMA_REG, 2, args);
+}
+
+int um_get_uma_reg(um_state *hndl, const int dev, const int addr, int *value)
+{
+    int args[1], ret, resp[2];
+    if(!hndl)
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    args[0] = addr;
+    ret = um_send_msg(hndl, dev, SMCP1_GET_UMA_REG, 1, args, 0, NULL, 2, resp);
+    if(ret < 0)
+        return ret;
+    if(resp[0] != addr || ret != 2)
+        return set_last_error(hndl, LIBUM_INVALID_RESP);
+    *value = resp[1];
+    return 1;
+}
+
+int um_set_uma_regs(um_state *hndl, const int dev, const int count, const int *values)
+{
+    if(!hndl)
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    if(count < 1 || count > UMA_REG_COUNT)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    return um_cmd(hndl, dev, SMCP1_SET_UMA_REGS, count, values);
+}
+
+int um_get_uma_regs(um_state *hndl, const int dev, const int count, int *values)
+{
+    if(!hndl)
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    if(count < 1 || count > UMA_REG_COUNT)
+        return set_last_error(hndl, LIBUM_INVALID_ARG);
+    return um_send_msg(hndl, dev, SMCP1_GET_UMA_REGS, 0, NULL, 0, NULL, count, values);
 }
 
 // uMv specific commands
