@@ -35,7 +35,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.500"
+#define LIBUM_VERSION_STR    "v1.501"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2024. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -1215,6 +1215,14 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
         ack.options = htonl(SMCP1_OPT_ACK);
         ack.sub_blocks = 0;
         um_send (hndl, sender_id, (unsigned char *) &ack, sizeof (ack));
+    }
+
+    // uMa samples
+    if (ext_data_type != NULL && *ext_data_type == SMCP1_NOTIFY_UMA_SAMPLES && ext_data_size) {
+        if (ext_data_ptr) {
+            memcpy(ext_data_ptr, data_ptr, ext_data_size);
+        }
+        return ext_data_size;
     }
 
     if (sub_blocks > 1 && ext_data_type != NULL && *ext_data_type >= 0) {
