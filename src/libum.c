@@ -35,7 +35,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.501"
+#define LIBUM_VERSION_STR    "v1.502"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2024. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -1178,7 +1178,6 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
                     ext_data_type != NULL) {
                     *ext_data_type = SMCP1_NOTIFY_UMA_SAMPLES;
                     ext_data_size = data_size * sizeof (uint32_t);
-                    return ext_data_size;
                 }
                 break;
 
