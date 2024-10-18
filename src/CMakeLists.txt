@@ -32,7 +32,8 @@ set_target_properties(um_shared PROPERTIES OUTPUT_NAME "um")
 set_target_properties(um_static PROPERTIES OUTPUT_NAME "um")
 
 if (WIN32)
-    target_link_libraries(um ws2_32)
+    target_link_libraries(um_shared ws2_32)
+    target_link_libraries(um_static ws2_32)
 endif ()
 
 install(TARGETS um_shared um_static DESTINATION $ENV{HOME}/lib)
