@@ -6,7 +6,6 @@ project(
         LANGUAGES C CXX
 )
 
-
 # Build type definitions. Use Release by default.
 if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
@@ -22,18 +21,14 @@ if (NOT ENABLE_COVERAGE)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 endif ()
 
-include_directories(${PROJECT_SOURCE_DIR}/../include)
+include_directories(${PROJECT_SOURCE_DIR}/../inc)
 
-add_library(um_shared SHARED libum.c)
+add_library(um SHARED libum.c)
 add_library(um_static STATIC libum.c)
 
-# Set output file names
-set_target_properties(um_shared PROPERTIES OUTPUT_NAME "um")
-set_target_properties(um_static PROPERTIES OUTPUT_NAME "um")
-
 if (WIN32)
-    target_link_libraries(um_shared ws2_32)
-    target_link_libraries(um_static ws2_32)
+    # For gcc
+    target_link_libraries(um ws2_32)
 endif ()
 
-install(TARGETS um_shared um_static DESTINATION $ENV{HOME}/lib)
+install(TARGETS um um_static DESTINATION $ENV{HOME}/lib)

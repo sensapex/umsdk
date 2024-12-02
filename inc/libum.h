@@ -245,8 +245,6 @@ LIBUM_SHARED_EXPORT um_state *um_open(const char *udp_target_address, const unsi
  * @brief Close the UDP socket if open and free the state structure allocated in open
  *
  * @param   hndl    Pointer to session handle
- *
- * @return  None
  */
 
 LIBUM_SHARED_EXPORT void um_close(um_state *hndl);
@@ -1162,8 +1160,20 @@ LIBUM_SHARED_EXPORT int ums_get_bowl_control(um_state *hndl, const int dev, ums_
 LIBUM_SHARED_EXPORT unsigned long long um_get_timestamp_ms();
 
 // Lower layer function needed by libuma
-#define LIBUM_MAX_MESSAGE_SIZE   1502
-typedef unsigned char um_message[LIBUM_MAX_MESSAGE_SIZE];
+#define LIBUM_MAX_MESSAGE_SIZE   1502       /**< Um message max size*/
+typedef unsigned char um_message[LIBUM_MAX_MESSAGE_SIZE]; /**< Internal data storage for active um message*/
+
+/**
+ * @brief Receive an extended message with additional data.
+ *
+ * @param   hndl          Pointer to session handle.
+ * @param   msg           Pointer to a buffer for the received message.
+ * @param   ext_data_type Pointer to an integer to receive the type of the extended data.
+ * @param   ext_data_ptr  Pointer to a buffer for the extended data.
+ * @param   timeout       Timeout in milliseconds for receiving the message.
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
+ */
 LIBUM_SHARED_EXPORT int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_data_ptr, const int timeout);
 
 /*

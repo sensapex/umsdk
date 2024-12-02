@@ -1,0 +1,26 @@
+name: Doxygen API documentation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    container: sensapex/spx-general-doxygen:0.1
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Generate Doxygen API documentation on branch '${{ github.ref_name }}'
+        id: doxygen
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          ./generate-docs.sh
+          echo "umsdk_version=$(cat doxygen-umsdk-version.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Doxygen API documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}_${{ steps.doxygen.outputs.umsdk_version }}_${{ github.ref_name }}_api_docs
+          path: ${{ github.workspace }}/doc/html
+          overwrite: true
