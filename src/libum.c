@@ -35,7 +35,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.502"
+#define LIBUM_VERSION_STR    "v1.503"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2024. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -2003,7 +2003,7 @@ int um_clear_device_list(um_state *hndl) {
     return found;
 }
 
-int um_set_uma_reg(um_state *hndl, const int dev, const int addr, const int value) {
+int um_set_uma_reg(um_state *hndl, const int dev, const uMaRegistry addr, const int value) {
     int args[2];
     if (!hndl) {
         return set_last_error (hndl, LIBUM_NOT_OPEN);
@@ -2013,7 +2013,7 @@ int um_set_uma_reg(um_state *hndl, const int dev, const int addr, const int valu
     return um_cmd (hndl, dev, SMCP1_SET_UMA_REG, 2, args);
 }
 
-int um_get_uma_reg(um_state *hndl, const int dev, const int addr, int *value) {
+int um_get_uma_reg(um_state *hndl, const int dev, const uMaRegistry addr, int *value) {
     int args[1], ret, resp[2];
     if (!hndl) {
         return set_last_error (hndl, LIBUM_NOT_OPEN);
@@ -2030,14 +2030,14 @@ int um_get_uma_reg(um_state *hndl, const int dev, const int addr, int *value) {
     return 1;
 }
 
-int um_set_uma_regs(um_state *hndl, const int dev, const int count, const int *values) {
+int um_set_uma_regs(um_state *hndl, const int dev, const int count, const uMaRegistry *values) {
     if (!hndl) {
         return set_last_error (hndl, LIBUM_NOT_OPEN);
     }
     if (count < 1 || count > UMA_REG_COUNT) {
         return set_last_error (hndl, LIBUM_INVALID_ARG);
     }
-    return um_cmd (hndl, dev, SMCP1_SET_UMA_REGS, count, values);
+    return um_cmd (hndl, dev, SMCP1_SET_UMA_REGS, count, (int *)values);
 }
 
 int um_get_uma_regs(um_state *hndl, const int dev, const int count, int *values) {
