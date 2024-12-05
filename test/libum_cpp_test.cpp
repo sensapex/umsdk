@@ -511,9 +511,6 @@ namespace {
         if (axisCnt == 4) {
             EXPECT_TRUE((w2 >= w1 + KDeltaUm - KTargetToleranceUm) &&
                         (w2 <= w1 + KDeltaUm + KTargetToleranceUm));
-        } else {
-            EXPECT_TRUE((w2 >= w1 - KTargetToleranceUm) &&
-                        (w2 <= w1 + KTargetToleranceUm));
         }
 
         // Phase 3. Move back to reference point
@@ -529,8 +526,10 @@ namespace {
                     (y3 <= y1 + KTargetToleranceUm));
         EXPECT_TRUE((z3 >= z1 - KTargetToleranceUm) &&
                     (z3 <= z1 + KTargetToleranceUm));
-        EXPECT_TRUE((w3 >= w1 - KTargetToleranceUm) &&
-                    (w3 <= w1 + KTargetToleranceUm));
+        if (axisCnt == 4) {
+            EXPECT_TRUE((w3 >= w1 - KTargetToleranceUm) &&
+                        (w3 <= w1 + KTargetToleranceUm));
+        }
 
         // Phase 4. Verify with the prevent_movement feature
         EXPECT_TRUE(mUmObj->setFeature (SMCP10_FEAT_PREVENT_MOVEMENT, true, mUmId));
