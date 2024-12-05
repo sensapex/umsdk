@@ -562,7 +562,6 @@ LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char
  * @param   step_z   Step length (in µm) for Z axis, negative value for backward, zero for axis not to be moved
  * @param   step_d   Step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
  * @param   speed_x  Movement speed (in µm/s) for X axis
- * @param   speed_x  Movement speed (in µm/s) for X axis
  * @param   speed_y  Movement speed (in µm/s) for Y axis
  * @param   speed_z  Movement speed (in µm/s) for Z axis
  * @param   speed_d  Movement speed (in µm/s) for D axis

@@ -6,7 +6,7 @@ namespace {
     TEST(LibumTestBasicC, test_um_get_version) {
         const char *version = um_get_version ();
         // Expect two strings not to be equal.
-        EXPECT_STREQ("v1.503", version);
+        EXPECT_STREQ("v1.504", version);
     }
 
     TEST(LibumTestBasicC, test_um_get_timestamp_us) {
