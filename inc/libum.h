@@ -1,9 +1,9 @@
 /**
  * @file    libum.h
  * @author  Sensapex <support@sensapex.com>
- * @date    19 Feb 2023
+ * @date    3 Dec 2024
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
- * @copyright   Copyright (c) 2016-2023 Sensapex. All rights reserved
+ * @copyright   Copyright (c) 2016-2024 Sensapex. All rights reserved
  *
  * The Sensapex uM product family SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
@@ -19,7 +19,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with the Sensapex micromanipulator SDK. If not, see
+ * along with the Sensapex Micromanipulator SDK. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -40,12 +40,12 @@
 #  include <ws2tcpip.h>
 #  include <windows.h>
 #  ifndef EADDRINUSE
-#    define EADDRINUSE    WSAEADDRINUSE     /**< cross platform trick, EADDRINUSE is not defined in windows */
+#    define EADDRINUSE    WSAEADDRINUSE     /**< cross-platform trick, EADDRINUSE is not defined in windows */
 #  endif
-#  define SOCKOPT_CAST    (char *)          /**< cross platform trick, non-standard variable type requires typecasting in windows for socket options */
-#  define socklen_t       int               /**< cross platform trick, socklen_t is not defined in windows */
-#  define getLastError()  WSAGetLastError() /**< cross platform trick, using winsocket function instead of errno */
-#  define timeoutError    WSAETIMEDOUT      /**< cross platform trick, detect timeout with winsocket error number */
+#  define SOCKOPT_CAST    (char *)          /**< cross-platform trick, non-standard variable type requires typecasting in windows for socket options */
+#  define socklen_t       int               /**< cross-platform trick, socklen_t is not defined in windows */
+#  define getLastError()  WSAGetLastError() /**< cross-platform trick, using winsocket function instead of errno */
+#  define timeoutError    WSAETIMEDOUT      /**< cross-platform trick, detect timeout with winsocket error number */
 typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 
 // Define this is embedding SDK into application directly, but note the LGPL license requirements
@@ -53,27 +53,26 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 #  define LIBUM_SHARED_EXPORT
 # else
 #  if defined(LIBUM_LIBRARY)
-#   define LIBUM_SHARED_EXPORT __declspec(dllexport) /**< cross platform trick, declspec for windows*/
+#   define LIBUM_SHARED_EXPORT __declspec(dllexport) /**< cross-platform trick, declspec for windows*/
 #  else
-#   define LIBUM_SHARED_EXPORT __declspec(dllimport) /**< cross platform trick, declspec for windows*/
+#   define LIBUM_SHARED_EXPORT __declspec(dllimport) /**< cross-platform trick, declspec for windows*/
 #  endif
 # endif
 #else // !_WINDOWS
 # include <unistd.h>
 # include <arpa/inet.h>
 # include <sys/errno.h>
-typedef int SOCKET;                         /**< cross platform trick, int instead of SOCKET (defined by winsock) in posix systems */
+typedef int SOCKET;                         /**< cross-platform trick, int instead of SOCKET (defined by winsock) in posix systems */
 typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
-# define SOCKET_ERROR   -1                  /**< cross platform trick, replace winsocket return value in posix systems */
-# define INVALID_SOCKET -1                  /**< cross platform trick, replace winsocket return value in posix systems */
-# define getLastError() errno               /**< cross platform trick, errno instead of WSAGetLastError() in posix systems */
-# define timeoutError   ETIMEDOUT           /**< cross platform trick, errno ETIMEDOUT instead of WSAETIMEDOUT in posix systems */
-# define closesocket    close               /**< cross platform trick, close() instead of closesocket() in posix systems */
-# define SOCKOPT_CAST                       /**< cross platform trick, non-standard typecast not needed in posix systems */
-# define LIBUM_SHARED_EXPORT                /**< cross platform trick, declspec for windows DLL, empty for posix systems */
+# define SOCKET_ERROR   -1                  /**< cross-platform trick, replace winsocket return value in posix systems */
+# define INVALID_SOCKET -1                  /**< cross-platform trick, replace winsocket return value in posix systems */
+# define getLastError() errno               /**< cross-platform trick, errno instead of WSAGetLastError() in posix systems */
+# define timeoutError   ETIMEDOUT           /**< cross-platform trick, errno ETIMEDOUT instead of WSAETIMEDOUT in posix systems */
+# define closesocket    close               /**< cross-platform trick, close() instead of closesocket() in posix systems */
+# define SOCKOPT_CAST                       /**< cross-platform trick, non-standard typecast not needed in posix systems */
+# define LIBUM_SHARED_EXPORT                /**< cross-platform trick, declspec for Windows DLL, empty for posix systems */
 #endif
 
-#include <string.h>
 #include <math.h>
 
 #ifdef _WINDOWS
@@ -245,8 +244,6 @@ LIBUM_SHARED_EXPORT um_state *um_open(const char *udp_target_address, const unsi
  * @brief Close the UDP socket if open and free the state structure allocated in open
  *
  * @param   hndl    Pointer to session handle
- *
- * @return  None
  */
 
 LIBUM_SHARED_EXPORT void um_close(um_state *hndl);
@@ -278,7 +275,7 @@ LIBUM_SHARED_EXPORT um_error um_last_error(const um_state *hndl);
 LIBUM_SHARED_EXPORT int um_last_os_errno(const um_state *hndl);
 
 /**
- * @brief Translate an error code to human readable format
+ * @brief Translate an error code to human-readable format
  *
  * @param   error_code    Error code to be translated to text string
  * @return  Pointer to an error string
@@ -286,7 +283,7 @@ LIBUM_SHARED_EXPORT int um_last_os_errno(const um_state *hndl);
 LIBUM_SHARED_EXPORT const char *um_errorstr(const um_error error_code);
 
 /**
- * @brief Get the latest error in human readable format
+ * @brief Get the latest error in human-readable format
  *
  * @param   hndl    Pointer to session handle
  *
@@ -296,7 +293,7 @@ LIBUM_SHARED_EXPORT const char *um_last_errorstr(um_state *hndl);
 
 
 /**
- * @brief Set up external log print function. By default the library writes
+ * @brief Set up external log print function. By default, the library writes
  *        to the stderr if verbose level is higher than zero.
  *
  * @param   hndl            Pointer to session handle
@@ -503,7 +500,7 @@ LIBUM_SHARED_EXPORT int um_get_positions(um_state *hndl, const int dev, const in
                                          float *x, float *y, float *z, float *d, int *elapsedptr);
 
 /**
- * @brief Read latest speeds and obtain time when the values were updated.
+ * @brief Read the latest speeds and obtain time when the values were updated.
  *
  *
  * @param       hndl        Pointer to session handle
@@ -565,10 +562,11 @@ LIBUM_SHARED_EXPORT float um_get_speed(um_state *hndl, const int dev, const char
  * @param   step_z   Step length (in µm) for Z axis, negative value for backward, zero for axis not to be moved
  * @param   step_d   Step length (in µm) for D axis, negative value for backward, zero for axis not to be moved
  * @param   speed_x  Movement speed (in µm/s) for X axis
+ * @param   speed_x  Movement speed (in µm/s) for X axis
  * @param   speed_y  Movement speed (in µm/s) for Y axis
  * @param   speed_z  Movement speed (in µm/s) for Z axis
  * @param   speed_d  Movement speed (in µm/s) for D axis
- * @param   mode     Movement mode (CLS for manipulator or microstepping mode for stage, value 0 for automatic selection)
+ * @param   mode     Movement mode (CLS for manipulator or micro-stepping mode for stage, value 0 for automatic selection)
  * @param   max_acceleration Maximum acceleration in µm/s^2. Pass 0 to use default.
  *
  * @return  Negative value if an error occurred. Zero or positive value otherwise
@@ -603,6 +601,14 @@ LIBUM_SHARED_EXPORT int um_take_step(um_state *hndl, const int dev,
  */
 
 LIBUM_SHARED_EXPORT int um_cmd_options(um_state *hndl, const int optionbits);
+
+/**
+ * @brief For sdk internal use only.
+ * @internal
+ */
+
+LIBUM_SHARED_EXPORT int um_cmd(um_state *hndl, const int dev, const int cmd,
+                               const int argc, const int *argv);
 
 /**
  * @brief Get a device's parameter value
@@ -762,7 +768,8 @@ LIBUM_SHARED_EXPORT int ump_get_axis_angle(um_state * hndl, const int dev, float
  *
  * @param   hndl    Pointer to session handle
  * @param   dev     Device ID
- * @return  Negative value if an error occurred. 1 if uMp has right-handed configuration, 0 if uMp has left-handed configration.
+ * @return  Negative value if an error occurred. 1 if uMp has right-handed configuration,
+ *          0 if uMp has left-handed configuration.
  */
 
 LIBUM_SHARED_EXPORT int ump_get_handedness_configuration(um_state *hndl, const int dev);
@@ -941,8 +948,78 @@ LIBUM_SHARED_EXPORT int um_clear_device_list(um_state *hndl);
 
 LIBUM_SHARED_EXPORT int um_has_unicast_address(um_state *hndl, const int dev);
 
+ /**
+  * @brief Enumeration for uMa register addresses.
+  *
+  * This enum defines the various register addresses used in the uMa device.
+  */
+typedef enum {
+    UMA_REG_NO_OPERATIONS = 0, /**< No operations */
+    UMA_REG_ACQUISITION_SETTINGS = 1, /**< Acquisition settings */
+    UMA_REG_VOLTAGE_OFFSET_COMPENSATION = 2, /**< Voltage offset compensation */
+    UMA_REG_DAC_VOLTAGE_COMMAND = 3, /**< DAC voltage command */
+    UMA_REG_VC_CFAST_COMPENSATION = 4, /**< VC CFast compensation */
+    UMA_REG_VC_CSLOW_COMPENSATION = 5, /**< VC CSlow compensation */
+    UMA_REG_VC_RSERIES_COMPENSATION = 6, /**< VC RSeries compensation */
+    UMA_REG_DAC_CURRENT_COMMAND = 7, /**< DAC current command */
+    UMA_REG_CC_CFAST_COMPENSATION = 8, /**< CC CFast compensation */
+    UMA_REG_CC_BRIDGE_COMPENSATION = 9 /**< CC Bridge compensation */
+} uMaRegistry;
+
 /**
- * @brief uMs-specific commands
+ * @brief Set a uMa register value
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   addr      Register address
+ * @param   value     Data to be written
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_set_uma_reg(um_state *hndl, const int dev, const uMaRegistry addr, int value);
+
+/**
+ * @brief   Get a uMa register value
+ * *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ * @param   addr    id Parameter id
+ * @param[out] value pointer to the variable to get the register value
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_get_uma_reg(um_state *hndl, const int dev, const uMaRegistry addr, int *value);
+
+/**
+ * @brief Set uMa register values
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   count     Number of registers to be set, first register at address 0, second at addr 1 etc.
+ * @param   values    Pointer to an array of values (32bit integers at wire)
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_set_uma_regs(um_state *hndl, const int dev,
+                                        const int count, const uMaRegistry *values);
+
+/**
+ * @brief Get uMa register values
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   count     Number of registers to be read, first register at address 0, second at addr 1 etc.
+ * @param[out] values  Pointer to an array of values (32bit integers at wire)
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+
+LIBUM_SHARED_EXPORT int um_get_uma_regs(um_state *hndl, const int dev, const int count, int *values);
+
+/**
+ * @brief uMs specific commands
  */
 
 /**
@@ -1065,7 +1142,8 @@ typedef struct
  * @return  Negative value if an error occurred. 0 if position is unknown or at center, 1-X otherwise.
  */
 
-LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *control, const ums_bowl_center *centers);
+LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, const ums_bowl_control *control,
+                                             const ums_bowl_center *centers);
 
 /**
  * @brief Get uMs bowl controls
@@ -1079,17 +1157,34 @@ LIBUM_SHARED_EXPORT int ums_set_bowl_control(um_state *hndl, const int dev, cons
  *          ums_bowl_center centers[UMS_BOWL_MAX_COUNT]
  *          ret = ums_get_bowl_control(hndl, dev, &control, centers);
  *
- * @return  Negative value if an error occurred. Number of bowls (value of control.count) otherwise.
+ * @return  Negative value if an error occurred. Number of bowls otherwise.
  */
 
 LIBUM_SHARED_EXPORT int ums_get_bowl_control(um_state *hndl, const int dev, ums_bowl_control *control, ums_bowl_center *centers);
 
 /**
- * @brief get millisecond accurate epoch (cross platform compatible way without using any extra library)
+ * @brief get millisecond accurate epoch (cross-platform compatible way without using any extra library)
  * @return  timestamp
  */
 
 LIBUM_SHARED_EXPORT unsigned long long um_get_timestamp_ms();
+
+// Lower layer function needed by libuma
+#define LIBUM_MAX_MESSAGE_SIZE   1502       /**< Um message max size*/
+typedef unsigned char um_message[LIBUM_MAX_MESSAGE_SIZE]; /**< Internal data storage for active um message*/
+
+/**
+ * @brief Receive an extended message with additional data.
+ *
+ * @param   hndl          Pointer to session handle.
+ * @param   msg           Pointer to a buffer for the received message.
+ * @param   ext_data_type Pointer to an integer to receive the type of the extended data.
+ * @param   ext_data_ptr  Pointer to a buffer for the extended data.
+ * @param   timeout       Timeout in milliseconds for receiving the message.
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
+ */
+LIBUM_SHARED_EXPORT int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_data_ptr, const int timeout);
 
 /*
  * End of the C-API
@@ -1100,7 +1195,7 @@ LIBUM_SHARED_EXPORT unsigned long long um_get_timestamp_ms();
 
 #define LIBUM_USE_LAST_DEV  0     /**< Use the selected device ID */
 
-/*!
+/**
  * @class LibUm
  * @brief An inline C++ wrapper class for a public Sensapex uM SDK
  *        not depending on Qt or std classes
@@ -1228,7 +1323,7 @@ public:
     {	return  um_get_param(_handle, getDev(dev), paramId, value) >= 0; }
 
     /**
-     * @brief Set parameter to he device
+     * @brief Set parameter to the device
      *
      * @param paramId   Parameter id
      * @param value     Data to be written
@@ -1652,6 +1747,6 @@ private:
     um_state *_handle;
 };
 
-#endif // C++
+#endif // __cplusplus++
 #endif // LIBUM_H
 

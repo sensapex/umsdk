@@ -2,76 +2,70 @@
 
 SDK for Sensapex uMx devices.
 
-* uMp - Micromanipulators
+* uMp - Micro manipulator
 * uMs - Microscope motorization
 * uMc - Pressure control
+* uMa - Amplifier
 
-### Installation
+### Build and Installation
 
-#### Linux and MacOS
-
-Build and install umsdk with example projects.
-
-``` bash
-cd scripts
-./build.sh
-```
-
-Install umlib in your system (Linux)
-
-``` bash
-cd scripts
-sudo ./install.sh
-```
-
-Example applications and libum can be found from build directory.
-
-Eg. Run 'sample'-application
-
-``` bash
-cd build-Release/sample
-./sample
-
-```
-
-#### Windows
+#### Building the sdk
 
 Build umsdk with example projects.
 
-``` powershell
-cd scripts
-build-mingw.bat
+``` bash
+cmake -B ./build -DCMAKE_BUILD_TYPE=release
+cmake --build ./build --config=release
+```
+Example applications and libum can be found from `./build/bin` directory.
+* `./build/bin/shared` - runtime loadable version of um-sdk library
+* `./build/bin/static` - statically linked version of um-sdk library
+* `./build/bin` - executables
+
+Run 'sample'-application
+``` bash
+./build/bin/sample --help
 ```
 
-Precompiled windows binaries can be found in
-https://github.com/sensapex/umsdk/releases/tag/v1.400
+Run 'cppsample'-application
+``` bash
+./build/bin/cppsample --help
+```
+
+### Install
+
+Install umsdk to system directories
+
+``` bash
+cmake --install ./build/src --config=release
+```
 
 ### Testing
 
-[Please see the documentation and instructions](./test/README.md)
-
-### Crosscompile for Windows
-
-* Install `mingw-w64`-toolchain. Please see [the instructions for installation](https://www.mingw-w64.org/)
-* Run `scripts/cc-mingw-w64.sh` -shell script (linux):
-
+Build the application with tests included
 ``` bash
-scripts/cc-mingw-w64.sh
+cmake -B ./build -DBUILD_TESTS=ON
+cmake --build ./build --config=release
 ```
 
-Crosscompiled Windows binaries can be found:
+Run 'libum_test'-application with basic test set
+``` bash
+./build/bin/libum_test --gtest_filter="LibumTestBasicC*"
+```
 
-`build-mingw-i686-Release` (for 32 bit Windows) <br>
-`build-mingw-x64-Release` (for 64 bit Windows)
-
+[Please see the documentation and instructions](./test/README.md)
 
 ### Documentation
 
-Generate doxygen documentation and examine doc/html/index.html for details. There is a sample
-application in examples/sample/ . and precompiled Doxygen documentation in
-http://dist.sensapex.com/misc/um-sdk/latest/doc/ .
+Generate doxygen documentation and examine doc/html/index.html for details.
+
+Precompiled Doxygen documentation can be found http://dist.sensapex.com/misc/um-sdk/latest/doc/
 
 ### Changelog
+
+#### Version 1.502
+
+- Initial support for uMa devices
 
 #### Version 1.400
 

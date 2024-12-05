@@ -10,3 +10,9 @@ x64
 win32
 .vs
 .vscode
+.idea
+
+# Doxygen
+doxygen-umsdk-version.txt
+/doc/html/
+/doc/latex/
