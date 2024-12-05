@@ -63,7 +63,7 @@ Precompiled Doxygen documentation can be found http://dist.sensapex.com/misc/um-
 
 ### Changelog
 
-#### Version 1.502
+#### Version 1.503
 
 - Initial support for uMa devices
 
