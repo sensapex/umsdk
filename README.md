@@ -53,7 +53,7 @@ Run 'libum_test'-application with basic test set
 ./build/bin/libum_test --gtest_filter="LibumTestBasicC*"
 ```
 
-[Please see the documentation and instructions](./test/README.md)
+Please see the documentation and instructions in test/README.md
 
 ### Documentation
 
@@ -62,6 +62,13 @@ Generate doxygen documentation and examine doc/html/index.html for details.
 Precompiled Doxygen documentation can be found http://dist.sensapex.com/misc/um-sdk/latest/doc/
 
 ### Changelog
+
+#### Version 1.600
+
+- Configurable axis drive order
+- uMc-INJ pressure range -100kPa..500kPa
+- Asynchronous operations and notifications
+- Sample application: oscillate using um_take_step()
 
 #### Version 1.504
 

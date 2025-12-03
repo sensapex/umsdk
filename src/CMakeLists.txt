@@ -16,6 +16,11 @@ endif ()
 #set(CMAKE_C_FLAGS_RELEASE "-O1" CACHE STRING "" FORCE)
 add_compile_options(-DLIBUM_LIBRARY)
 
+# Expose internal functions for unit testing when BUILD_TESTS is enabled
+if (BUILD_TESTS)
+    add_compile_options(-DBUILD_TESTS)
+endif()
+
 # Compile an Universal binary for MacOS (when not running code coverage build)
 if (NOT ENABLE_COVERAGE)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)

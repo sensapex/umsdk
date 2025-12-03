@@ -1,7 +1,7 @@
 /*
  * A sample C-program for Sensapex micromanipulator SDK (umpsdk)
  *
- * Copyright (c) 2016-2023, Sensapex Oy
+ * Copyright (c) 2016-2026, Sensapex Oy
  * All rights reserved.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
@@ -26,7 +26,7 @@
 #include <stdbool.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.123"
+#define VERSION_STR   "v0.125"
 #define COPYRIGHT "Copyright (c) Sensapex. All rights reserved"
 
 #define DEV     1
@@ -37,7 +37,7 @@ typedef struct params_s
     float x, y, z, d, X, Y, Z, D, pressure_kpa, speed;
     int verbose, update, loop, dev, timeout, value, dim_leds, group;
     int calibrate_pressure, pressure_channel, valve_channel, reset_fluid_detector, pressure_sensor;
-    bool lens_position, read_fluid_detectors;
+    bool lens_position, read_fluid_detectors, init_zero, oscillate;
     char *address;
 } params_struct;
 
@@ -62,6 +62,8 @@ void usage(char **argv)
     fprintf(stderr,"-W\tabs target for the 4th axis\n");
     fprintf(stderr,"-D\tabs target for the 4th axis, alias for above\n");
     fprintf(stderr,"-n\tcount\tloop between current and target positions or take multiple relative steps into same direction\n");
+    fprintf(stderr,"-0\tInitialise zero positions\n");
+    fprintf(stderr,"-o\tOscillate with given amplitude\n");
 
     fprintf(stderr,"Get or set lens changer position\n");
     fprintf(stderr,"-L\t\tto get or set lens position, set if -v defined\n");
@@ -69,7 +71,7 @@ void usage(char **argv)
 
     fprintf(stderr,"Get or set uMc controls (give -v value to set)\n");
     fprintf(stderr,"-C\tchn\tpressure channel 1-8 (0 to disable)\n");
-    fprintf(stderr,"-v\tvalue\tkPa, range -70.0 - +70.0\n");
+    fprintf(stderr,"-v\tvalue\tkPa, range -100.0 - +500.0\n");
     fprintf(stderr,"-V\tchn\tvalve channel 1-8 (0 to disable)\n");
     fprintf(stderr,"-v\tvalue\t0 or 1\n");
     fprintf(stderr,"-R\tchn\tread pressure sensor, 1-8 (0 to disable)\n");
@@ -100,6 +102,8 @@ void parse_args(int argc, char *argv[], params_struct *params)
     params->update = UPDATE;
     params->address = LIBUM_DEF_BCAST_ADDRESS;
     params->timeout = LIBUM_DEF_TIMEOUT;
+    params->init_zero = false;
+    params->oscillate = false;
     for(i = 1; i < argc; i++)
     {
         if(argv[i][0] == '-')
@@ -123,6 +127,12 @@ void parse_args(int argc, char *argv[], params_struct *params)
                     params->loop = v;
                 else
                     usage(argv);
+                break;
+            case '0':
+                params->init_zero = true;
+                break;
+            case 'o':
+                params->oscillate = true;
                 break;
             case 'u':
                 if(i < argc-1 && sscanf(argv[++i],"%d",&v) == 1 && v > 0)
@@ -277,6 +287,111 @@ static int isnanf(const float arg)
 }
 #endif
 
+bool g_init_zero_completed = false;
+void init_zero_complete_callback(int dev, int status, const void *arg)
+{
+    (void)arg;
+    printf("Device %d init zero complete, status %d\n", dev, status);
+    g_init_zero_completed = true;
+}
+
+// Motion state tracking for um_take_step_sync
+typedef enum {
+    STEP_MOTION_IDLE,      // No motion expected
+    STEP_MOTION_PENDING,   // Command sent, waiting for motion to start
+    STEP_MOTION_ACTIVE,    // Motion in progress (callback received with axis_mask != 0)
+    STEP_MOTION_COMPLETE   // Motion finished (callback received with axis_mask == 0)
+} step_motion_state_t;
+
+// Struct passed as callback argument for motion tracking
+typedef struct {
+    int dev_id;
+    int motion_mask;
+    volatile step_motion_state_t state;
+} step_motion_ctx_t;
+
+void status_changed_callback(int dev, int status, const void *arg)
+{
+    step_motion_ctx_t *ctx = (step_motion_ctx_t *)arg;
+
+    if (!ctx)
+        return;
+
+    // Only process callbacks for the device we're waiting on
+    if (dev == ctx->dev_id) {
+        if (status & ctx->motion_mask) {
+            // Motion started
+            ctx->state = STEP_MOTION_ACTIVE;
+        } else {
+            // Motion stopped
+            if (ctx->state == STEP_MOTION_ACTIVE) {
+                ctx->state = STEP_MOTION_COMPLETE;
+            }
+        }
+    }
+}
+
+#define STEP_START_TIMEOUT_MS       100   // Time for motion to start after command
+#define STEP_MOVE_TIMEOUT_MS        30000 // Maximum time for a single move
+#define DEFAULT_OSCILLATE_SPEED_UMS 1000  // Default oscillation speed in um/s
+
+int um_take_step_sync(um_state *handle, int dev,
+                      const float step_x, const float step_y, const float step_z, const float step_d,
+                      const int speed_x, const int speed_y, const int speed_z, const int speed_d,
+                      const int mode, const int max_acceleration)
+{
+    int ret;
+    unsigned long long start_time, motion_start_time;
+    step_motion_ctx_t ctx;
+
+    // Set up state tracking via callback argument
+    ctx.dev_id = dev;
+    ctx.state = STEP_MOTION_PENDING;
+    ctx.motion_mask = 0;
+    if (step_x != 0.0f) ctx.motion_mask |= LIBUM_STATUS_X_MOVING;
+    if (step_y != 0.0f) ctx.motion_mask |= LIBUM_STATUS_Y_MOVING;
+    if (step_z != 0.0f) ctx.motion_mask |= LIBUM_STATUS_Z_MOVING;
+    if (step_d != 0.0f) ctx.motion_mask |= LIBUM_STATUS_W_MOVING;
+
+    // Process any pending messages before callback registration
+    um_receive(handle, 0);
+    um_set_status_changed_callback(handle, status_changed_callback, &ctx);
+
+    ret = um_take_step(handle, dev, step_x, step_y, step_z, step_d,
+                       speed_x, speed_y, speed_z, speed_d, mode, max_acceleration);
+    if (ret < 0) {
+        ctx.state = STEP_MOTION_IDLE;
+        um_set_status_changed_callback(handle, NULL, NULL);
+        return ret;
+    }
+
+    // Wait for motion to start
+    start_time = um_get_timestamp_ms();
+    while (ctx.state == STEP_MOTION_PENDING) {
+        um_receive(handle, 0);
+        if ((um_get_timestamp_ms() - start_time) > STEP_START_TIMEOUT_MS) {
+            ctx.state = STEP_MOTION_IDLE;
+            um_set_status_changed_callback(handle, NULL, NULL);
+            return -1; // Motion did not start in time
+        }
+    }
+
+    // Motion started, now wait for completion
+    motion_start_time = um_get_timestamp_ms();
+    while (ctx.state == STEP_MOTION_ACTIVE) {
+        um_receive(handle, 0);
+        if ((um_get_timestamp_ms() - motion_start_time) > STEP_MOVE_TIMEOUT_MS) {
+            ctx.state = STEP_MOTION_IDLE;
+            um_set_status_changed_callback(handle, NULL, NULL);
+            return -2; // Motion did not complete in time
+        }
+    }
+
+    ctx.state = STEP_MOTION_IDLE;
+    um_set_status_changed_callback(handle, NULL, NULL);
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     um_state *handle = NULL;
@@ -406,6 +521,21 @@ int main(int argc, char *argv[])
         exit(ret>=0?0:-ret);
     }
 
+    if(params.init_zero)
+    {
+        g_init_zero_completed = false;
+        um_set_init_zero_callback(handle, &init_zero_complete_callback, NULL);
+        if((ret = um_init_zero(handle, params.dev, 0)) < 0) {
+            fprintf(stderr, "Initialize zero positions failed - %s\n", um_last_errorstr(handle));
+        } else {
+            printf("Device %d zero positions initialize started ..\n", params.dev);
+            while(!g_init_zero_completed)
+                um_receive(handle, params.update);
+            printf(" .. completed.\n");
+        }
+        um_close(handle);
+        exit(ret>=0?0:-ret);
+    }
 
     if(params.reset_fluid_detector)
     {
@@ -458,6 +588,36 @@ int main(int argc, char *argv[])
             printf("Manipulator %d LEDs %s\n", params.dev, params.dim_leds?"OFF":"ON");
         um_close(handle);
         exit(ret>=0?0:ret);
+    }
+    if(params.oscillate) {
+        if (params.x == 0 && params.y == 0 && params.z == 0 && params.d == 0) {
+            fprintf(stderr, "Oscillation amplitude not specified\n");
+            um_close(handle);
+            exit(2);
+        }
+        int speed = params.speed > 0 ? (int)params.speed : DEFAULT_OSCILLATE_SPEED_UMS;
+        int loop_count = params.loop > 0 ? params.loop : 1; // Default to at least 1 oscillation
+        for (int i = 0; i < loop_count; i++) {
+            // Forward step
+            ret = um_take_step_sync(handle, params.dev,
+                                    params.x, params.y, params.z, params.d,
+                                    speed, speed, speed, speed, 0, 0);
+            if (ret < 0) {
+                fprintf(stderr, "Oscillate forward step failed - %s\n", um_last_errorstr(handle));
+                break;
+            }
+            // Backward step
+            ret = um_take_step_sync(handle, params.dev,
+                                    -params.x, -params.y, -params.z, -params.d,
+                                    speed, speed, speed, speed, 0, 0);
+            if (ret < 0) {
+                fprintf(stderr, "Oscillate backward step failed - %s\n", um_last_errorstr(handle));
+                break;
+            }
+            printf("Oscillation cycle %d/%d complete\n", i + 1, loop_count);
+        }
+        um_close(handle);
+        exit(ret >= 0 ? 0 : -ret);
     }
 
     // uMp or uMs goto position commands - or just reading current position
@@ -533,4 +693,3 @@ int main(int argc, char *argv[])
     um_close(handle);
     exit(!ret);
 }
-
