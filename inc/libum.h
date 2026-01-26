@@ -1,9 +1,9 @@
 /**
  * @file    libum.h
  * @author  Sensapex <support@sensapex.com>
- * @date    3 Dec 2024
+ * @date    23 Jan 2026
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
- * @copyright   Copyright (c) 2016-2024 Sensapex. All rights reserved
+ * @copyright   Copyright (c) 2016-2026 Sensapex. All rights reserved
  *
  * The Sensapex uM product family SDK is free software: you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public License
@@ -184,8 +184,64 @@ typedef struct um_positions_s
  *
  * @return  Pointer to an error string
  */
-
 typedef void (*um_log_print_func)(int level, const void *arg, const char *func, const char *message);
+
+/**
+ * @brief Prototype for status changed notification callback function
+ *
+ * @param   dev         Device ID
+ * @param   state_mask  Bitmask of current state:
+ *                      #LIBUM_STATUS_BUSY (0x01) = busy
+ *                      #LIBUM_STATUS_ERROR (0x08) = error
+ *                      #LIBUM_STATUS_X_MOVING (0x10) = X moving
+ *                      #LIBUM_STATUS_Y_MOVING (0x20) = Y moving
+ *                      #LIBUM_STATUS_Z_MOVING (0x40) = Z moving
+ *                      #LIBUM_STATUS_W_MOVING (0x80) = D/W moving
+ *                      Value 0 means idle state
+ * @param   arg         Optional argument e.g. a file handle, optional, may be NULL
+ *
+ * @note Thread safety: Callbacks are invoked from within um_receive() calls.
+ *       The caller must ensure the callback function and its argument remain valid
+ *       for the entire lifetime of the callback registration. Do not modify callback
+ *       registrations from within a callback. The SDK is not thread-safe; if using
+ *       multiple threads, ensure um_receive() and callback registration functions
+ *       are called from the same thread or properly synchronized.
+ */
+typedef void (*um_status_changed_notify_func)(int dev, int state_mask, const void *arg);
+
+/**
+ * @brief Prototype for calibration complete notification callback function
+ *
+ * @param   dev     Device ID
+ * @param   status  0 = calibration completed ok, negative value if an error occurred
+ * @param   arg     Optional argument e.g. a file handle, optional, may be NULL
+ *
+ * @note Thread safety: See um_status_changed_notify_func for thread safety considerations.
+ */
+typedef void (*um_calibration_notify_func)(int dev, int status, const void *arg);
+
+/**
+ * @brief Prototype for position drive complete notification callback function
+ *
+ * @param   dev     Device ID
+ * @param   status  0 = position drive completed ok, negative value if an error occurred
+ * @param   arg     Optional argument e.g. a file handle, optional, may be NULL
+ *
+ * @note Thread safety: See um_status_changed_notify_func for thread safety considerations.
+ */
+typedef void (*um_position_drive_notify_func)(int dev, int status, const void *arg);
+
+/**
+ * @brief Prototype for init zero position complete notification callback function
+ *
+ * @param   dev     Device ID
+ * @param   status  0 = init zero position completed ok, negative value if an error occurred
+ * @param   arg     Optional argument e.g. a file handle, optional, may be NULL
+ *
+ * @note Thread safety: See um_status_changed_notify_func for thread safety considerations.
+ */
+typedef void (*um_init_zero_notify_func)(int dev, int status, const void *arg);
+
 
 /**
  * @brief The state struct, pointer to this is the session handle in the C API
@@ -226,6 +282,14 @@ typedef struct um_state_s
                                                         */
     unsigned long long drive_status_ts[LIBUM_MAX_DEVS]; /**< position drive state check timestamp per device - last time PWM seen busy, updated by get_drive_status */
     unsigned long long last_msg_ts[LIBUM_MAX_DEVS];     /**< Time stamp of last sent packet per device */
+    um_calibration_notify_func func_um_calibration_completed;       /**< Calibration complete notification callback function pointer */
+    const void *calibration_completed_arg;                          /**< Argument for the above */
+    um_position_drive_notify_func func_um_position_drive_completed; /**< Position drive complete notification callback function pointer */
+    const void *position_drive_completed_arg;                       /**< Argument for the above */
+    um_init_zero_notify_func func_um_init_zero_completed;           /**< Init zero position complete notification callback function pointer */
+    const void *init_zero_completed_arg;                            /**< Argument for the above */
+    um_status_changed_notify_func func_um_status_changed;           /**< Status changed notification callback function pointer */
+    const void *status_changed_arg;                                 /**< Argument for the above */
 } um_state;
 
 /**
@@ -310,6 +374,54 @@ LIBUM_SHARED_EXPORT int um_set_log_func(um_state *hndl, const int verbose_level,
                                           um_log_print_func func, const void *arg);
 
 /**
+ * @brief Set up init zero completed notification callback
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   func    Pointer to the callback function, NULL to disable
+ * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+LIBUM_SHARED_EXPORT int um_set_init_zero_callback(um_state *hndl,
+                                                  um_init_zero_notify_func func, const void *arg);
+
+/**
+ * @brief Set up calibration completed notification callback
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   func    Pointer to the callback function, NULL to disable
+ * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+LIBUM_SHARED_EXPORT int um_set_calibration_callback(um_state *hndl,
+                                                    um_calibration_notify_func func, const void *arg);
+
+/**
+ * @brief Set up position drive completed notification callback
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   func    Pointer to the callback function, NULL to disable
+ * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+LIBUM_SHARED_EXPORT int um_set_position_drive_callback(um_state *hndl,
+                                                       um_position_drive_notify_func func, const void *arg);
+
+/**
+ * @brief Set up status changed notification callback
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   func    Pointer to the callback function, NULL to disable
+ * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+LIBUM_SHARED_EXPORT int um_set_status_changed_callback(um_state *hndl,
+                                                       um_status_changed_notify_func func, const void *arg);
+
+/**
  * @brief Get SDK library version
  *
  * @return  Pointer to version string
@@ -336,6 +448,22 @@ LIBUM_SHARED_EXPORT int um_ping(um_state *hndl, const int dev);
  */
 
 LIBUM_SHARED_EXPORT int um_is_busy(um_state *hndl, const int dev);
+
+/**
+ * @brief Check if any axis is currently moving
+ *
+ * @param   hndl    Pointer to session handle
+ * @param   dev     Device ID
+ *
+ * @return  Negative value if an error occurred.
+ *          0 if no axis is moving, positive bitmask of moving axes otherwise:
+ *          #LIBUM_STATUS_X_MOVING (0x10) = X moving
+ *          #LIBUM_STATUS_Y_MOVING (0x20) = Y moving
+ *          #LIBUM_STATUS_Z_MOVING (0x40) = Z moving
+ *          #LIBUM_STATUS_W_MOVING (0x80) = W/D moving
+ */
+
+LIBUM_SHARED_EXPORT int um_is_moving(um_state *hndl, const int dev);
 
 /**
  * @brief Obtain position drive status
@@ -679,6 +807,30 @@ LIBUM_SHARED_EXPORT int um_set_soft_start_mode(um_state *hndl, const int dev, co
  * @return  Negative value if an error occurred. 0 = disabled or 1 = enabled value otherwise
  */
 LIBUM_SHARED_EXPORT int um_get_soft_start_mode(um_state *hndl, const int dev);
+
+/**
+ * @brief Set device's axis drive order
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @param   order     Axis drive order f.ex.
+ *                       0x00010203 = X->Y->Z->D
+ *                       0x03020100 = D->Z->Y->X
+ *                       0x03000102 = D->X->Y->Z (default for uMs)
+ *                       0x01020003 = Y->Z->X->D (default for uMp)
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise
+ */
+LIBUM_SHARED_EXPORT int um_set_axis_drive_order(um_state *hndl, const int dev, const int order);
+
+/**
+ * @brief Get device's axis drive order
+ *
+ * @param   hndl      Pointer to session handle
+ * @param   dev       Device ID
+ * @return  Negative value if an error occurred. Axis drive order value otherwise
+ */
+LIBUM_SHARED_EXPORT int um_get_axis_drive_order(um_state *hndl, const int dev);
 
 /**
  * @brief Get state of a device's feature
@@ -1274,6 +1426,21 @@ public:
     {   return um_is_busy(_handle, getDev(dev)) > 0; }
 
     /**
+     * @brief Check if any axis is currently moving
+     *
+     * @param dev   Device ID
+     *
+     * @return 0 if no axis is moving, positive bitmask of moving axes otherwise:
+     *         #LIBUM_STATUS_X_MOVING (0x10) = X moving
+     *         #LIBUM_STATUS_Y_MOVING (0x20) = Y moving
+     *         #LIBUM_STATUS_Z_MOVING (0x40) = Z moving
+     *         #LIBUM_STATUS_W_MOVING (0x80) = W/D moving
+     *         Negative value if an error occurred.
+     */
+    int isMoving(const int dev = LIBUM_USE_LAST_DEV)
+    {   return um_is_moving(_handle, getDev(dev)); }
+
+    /**
      * @brief Obtain memory or position drive status
      *
      * @param   dev     Device ID
@@ -1392,6 +1559,31 @@ public:
      */
     bool setExtFeature(const int featureId, const bool state, const int dev = LIBUM_USE_LAST_DEV)
     {	return  um_set_ext_feature(_handle, getDev(dev), featureId, state) >= 0; }
+
+    /**
+     * @brief Set device's axis drive order
+     *
+     * @param order     Axis drive order, e.g.:
+     *                     0x00010203 = X->Y->Z->D
+     *                     0x03020100 = D->Z->Y->X
+     *                     0x03000102 = D->X->Y->Z (default for uMs)
+     *                     0x01020003 = Y->Z->X->D (default for uMp)
+     * @param dev       Device ID
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
+    bool setAxisDriveOrder(const int order, const int dev = LIBUM_USE_LAST_DEV)
+    {   return um_set_axis_drive_order(_handle, getDev(dev), order) >= 0; }
+
+    /**
+     * @brief Get device's axis drive order
+     *
+     * @param dev       Device ID
+     *
+     * @return Negative value if an error occurred. Axis drive order value otherwise
+     */
+    int getAxisDriveOrder(const int dev = LIBUM_USE_LAST_DEV)
+    {   return um_get_axis_drive_order(_handle, getDev(dev)); }
 
     /**
      * @brief Read device position, possibly from a cache.
@@ -1721,6 +1913,46 @@ public:
     {	return um_set_log_func(_handle, verbose_level, func, arg) >= 0 ? true : false; }
 
     /**
+     * @brief Set up calibration completed notification callback
+     *
+     * @param   func    Pointer to the callback function, NULL to disable
+     * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+     * @return  `true` if operation was successful, `false` otherwise
+     */
+    bool setCalibrationCallback(um_calibration_notify_func func, const void *arg)
+    {   return um_set_calibration_callback(_handle, func, arg) >= 0; }
+
+    /**
+     * @brief Set up position drive completed notification callback
+     *
+     * @param   func    Pointer to the callback function, NULL to disable
+     * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+     * @return  `true` if operation was successful, `false` otherwise
+     */
+    bool setPositionDriveCallback(um_position_drive_notify_func func, const void *arg)
+    {   return um_set_position_drive_callback(_handle, func, arg) >= 0; }
+
+    /**
+     * @brief Set up init zero position completed notification callback
+     *
+     * @param   func    Pointer to the callback function, NULL to disable
+     * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+     * @return  `true` if operation was successful, `false` otherwise
+     */
+    bool setInitZeroCallback(um_init_zero_notify_func func, const void *arg)
+    {   return um_set_init_zero_callback(_handle, func, arg) >= 0; }
+
+    /**
+     * @brief Set up status changed notification callback
+     *
+     * @param   func    Pointer to the callback function, NULL to disable
+     * @param   arg     Pointer argument to be passed to the callback function, optional, may be NULL
+     * @return  `true` if operation was successful, `false` otherwise
+     */
+    bool setStatusChangedCallback(um_status_changed_notify_func func, const void *arg)
+    {   return um_set_status_changed_callback(_handle, func, arg) >= 0; }
+
+    /**
      * @brief Process incoming messages (may update status or location cache)
      * @return number of messages received
      */
@@ -1748,4 +1980,3 @@ private:
 
 #endif // __cplusplus++
 #endif // LIBUM_H
-

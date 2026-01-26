@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
 #include <libum.h>
 #include <smcp1.h>
+#include "libum_internal.h"
 
 #if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
 # ifndef _WINDOWS
-  define _WINDOWS
+#  define _WINDOWS
 # endif
 # include <windows.h>
 
@@ -45,7 +46,7 @@ namespace {
     }
 
     TEST_F(LibumTestBasicCpp, test_version) {
-        EXPECT_STREQ("v1.504", mUmObj->version ());
+        EXPECT_STREQ("v1.600", mUmObj->version ());
     }
 
     TEST_F(LibumTestBasicCpp, test_open_isOpen_close) {
@@ -134,6 +135,99 @@ namespace {
         // EXPECT_TRUE(mUmObj->ping (1));
     }
 
+    // Callback test helpers
+    static void localCalibrationCallback(int dev, int status, const void *arg) {
+        (void)dev; (void)status; (void)arg;
+    }
+
+    static void localPositionDriveCallback(int dev, int status, const void *arg) {
+        (void)dev; (void)status; (void)arg;
+    }
+
+    static void localInitZeroCallback(int dev, int status, const void *arg) {
+        (void)dev; (void)status; (void)arg;
+    }
+
+    static void localStatusChangedCallback(int dev, int state_mask, const void *arg) {
+        (void)dev; (void)state_mask; (void)arg;
+    }
+
+    TEST_F(LibumTestBasicCpp, test_setCalibrationCallback) {
+        // Expect failure when not open
+        EXPECT_FALSE(mUmObj->setCalibrationCallback (NULL, NULL));
+
+        EXPECT_TRUE(mUmObj->open ());
+
+        // Set callback with NULL (disable)
+        EXPECT_TRUE(mUmObj->setCalibrationCallback (NULL, NULL));
+
+        // Set callback with function pointer
+        EXPECT_TRUE(mUmObj->setCalibrationCallback (&localCalibrationCallback, NULL));
+
+        // Set callback with function pointer and argument
+        EXPECT_TRUE(mUmObj->setCalibrationCallback (&localCalibrationCallback, "test arg"));
+
+        // Disable callback
+        EXPECT_TRUE(mUmObj->setCalibrationCallback (NULL, NULL));
+    }
+
+    TEST_F(LibumTestBasicCpp, test_setPositionDriveCallback) {
+        // Expect failure when not open
+        EXPECT_FALSE(mUmObj->setPositionDriveCallback (NULL, NULL));
+
+        EXPECT_TRUE(mUmObj->open ());
+
+        // Set callback with NULL (disable)
+        EXPECT_TRUE(mUmObj->setPositionDriveCallback (NULL, NULL));
+
+        // Set callback with function pointer
+        EXPECT_TRUE(mUmObj->setPositionDriveCallback (&localPositionDriveCallback, NULL));
+
+        // Set callback with function pointer and argument
+        EXPECT_TRUE(mUmObj->setPositionDriveCallback (&localPositionDriveCallback, "test arg"));
+
+        // Disable callback
+        EXPECT_TRUE(mUmObj->setPositionDriveCallback (NULL, NULL));
+    }
+
+    TEST_F(LibumTestBasicCpp, test_setInitZeroCallback) {
+        // Expect failure when not open
+        EXPECT_FALSE(mUmObj->setInitZeroCallback (NULL, NULL));
+
+        EXPECT_TRUE(mUmObj->open ());
+
+        // Set callback with NULL (disable)
+        EXPECT_TRUE(mUmObj->setInitZeroCallback (NULL, NULL));
+
+        // Set callback with function pointer
+        EXPECT_TRUE(mUmObj->setInitZeroCallback (&localInitZeroCallback, NULL));
+
+        // Set callback with function pointer and argument
+        EXPECT_TRUE(mUmObj->setInitZeroCallback (&localInitZeroCallback, "test arg"));
+
+        // Disable callback
+        EXPECT_TRUE(mUmObj->setInitZeroCallback (NULL, NULL));
+    }
+
+    TEST_F(LibumTestBasicCpp, test_setStatusChangedCallback) {
+        // Expect failure when not open
+        EXPECT_FALSE(mUmObj->setStatusChangedCallback (NULL, NULL));
+
+        EXPECT_TRUE(mUmObj->open ());
+
+        // Set callback with NULL (disable)
+        EXPECT_TRUE(mUmObj->setStatusChangedCallback (NULL, NULL));
+
+        // Set callback with function pointer
+        EXPECT_TRUE(mUmObj->setStatusChangedCallback (&localStatusChangedCallback, NULL));
+
+        // Set callback with function pointer and argument
+        EXPECT_TRUE(mUmObj->setStatusChangedCallback (&localStatusChangedCallback, "test arg"));
+
+        // Disable callback
+        EXPECT_TRUE(mUmObj->setStatusChangedCallback (NULL, NULL));
+    }
+
     // uMp spesific tests
     class LibumTestUmpCpp : public LibumTestBasicCpp {
     protected:
@@ -144,6 +238,19 @@ namespace {
         EXPECT_TRUE(mUmObj->open ());
         EXPECT_TRUE(mUmObj->ping (mUmId));
         EXPECT_FALSE(mUmObj->ping (mUmId + UNDEFINED_UMX_INDEX));
+    }
+
+    TEST_F(LibumTestUmpCpp, test_isMoving) {
+        // Expect error when not open
+        EXPECT_LT(mUmObj->isMoving (mUmId), 0);
+
+        EXPECT_TRUE(mUmObj->open ());
+
+        // When device is idle, isMoving should return 0
+        EXPECT_EQ(0, mUmObj->isMoving (mUmId));
+
+        // Invalid device returns 0 (no cached status available)
+        EXPECT_EQ(0, mUmObj->isMoving (mUmId + UNDEFINED_UMX_INDEX));
     }
 
     TEST_F(LibumTestUmpCpp, test_getAxisCount) {
@@ -496,7 +603,7 @@ namespace {
 
         // Phase 2. Move to target point
         EXPECT_TRUE(mUmObj->takeStep (KDeltaUm, KDeltaUm, KDeltaUm, KDeltaUm, KSpeedUms, mUmId));
-        sleep_ms (axisCnt == 3000 ? 2000 : 3000);
+        sleep_ms (axisCnt == 3 ? 2000 : 3000);
 
         float x2, y2, z2, w2;
         const float KTargetToleranceUm = 1.00;
@@ -518,7 +625,7 @@ namespace {
 
         // Phase 3. Move back to reference point
         EXPECT_TRUE(mUmObj->takeStep (-KDeltaUm, -KDeltaUm, -KDeltaUm, -KDeltaUm, KSpeedUms, mUmId));
-        sleep_ms (axisCnt == 3000 ? 2000 : 3000);
+        sleep_ms (axisCnt == 3 ? 2000 : 3000);
 
         float x3, y3, z3, w3;
         EXPECT_TRUE(mUmObj->getPositions (&x3, &y3, &z3, &w3, mUmId, LIBUM_TIMELIMIT_DISABLED));
@@ -543,6 +650,54 @@ namespace {
         EXPECT_TRUE(mUmObj->open ());
         int handednessConfig = mUmObj->umpHandednessConfiguration (mUmId);
         EXPECT_TRUE(handednessConfig == 0 || handednessConfig == 1);
+    }
+
+    TEST_F(LibumTestBasicCpp, test_isValidAxisDriveOrder) {
+        // Valid axis drive orders - all permutations must have each axis 0,1,2,3 exactly once
+        EXPECT_TRUE(is_valid_axis_drive_order(0x00010203)); // X->Y->Z->D
+        EXPECT_TRUE(is_valid_axis_drive_order(0x03020100)); // D->Z->Y->X
+        EXPECT_TRUE(is_valid_axis_drive_order(0x03000102)); // D->X->Y->Z (default for uMs)
+        EXPECT_TRUE(is_valid_axis_drive_order(0x01020003)); // Y->Z->X->D (default for uMp)
+        EXPECT_TRUE(is_valid_axis_drive_order(0x02010300)); // Z->Y->D->X
+        EXPECT_TRUE(is_valid_axis_drive_order(0x00030201)); // X->D->Z->Y
+
+        // Invalid: axis value > 3
+        EXPECT_FALSE(is_valid_axis_drive_order(0x04010203)); // 4 is not valid
+        EXPECT_FALSE(is_valid_axis_drive_order(0x00010204)); // 4 is not valid
+        EXPECT_FALSE(is_valid_axis_drive_order(0xFF010203)); // 0xFF is not valid
+
+        // Invalid: duplicate axis values
+        EXPECT_FALSE(is_valid_axis_drive_order(0x00000102)); // X appears twice
+        EXPECT_FALSE(is_valid_axis_drive_order(0x00010101)); // Y appears three times
+        EXPECT_FALSE(is_valid_axis_drive_order(0x03030201)); // D appears twice
+        EXPECT_FALSE(is_valid_axis_drive_order(0x00000000)); // X appears four times
+        EXPECT_FALSE(is_valid_axis_drive_order(0x01010101)); // Y appears four times
+        EXPECT_FALSE(is_valid_axis_drive_order(0x02020202)); // Z appears four times
+        EXPECT_FALSE(is_valid_axis_drive_order(0x03030303)); // D appears four times
+    }
+
+    TEST_F(LibumTestUmpCpp, test_driveOrderCustom) {
+        EXPECT_FALSE(mUmObj->setAxisDriveOrder (0x00010203, mUmId));
+        EXPECT_TRUE(mUmObj->open ());
+
+        // Get current drive order
+        int currentDriveOrder = mUmObj->getAxisDriveOrder (mUmId);
+        EXPECT_GE(currentDriveOrder, 0);
+
+        // Set new drive order
+        int newDriveOrder = 0x03020100; // D->Z->Y->X
+        EXPECT_TRUE(mUmObj->setAxisDriveOrder (newDriveOrder, mUmId));
+
+        // Verify new drive order
+        int verifyDriveOrder = mUmObj->getAxisDriveOrder (mUmId);
+        EXPECT_EQ(newDriveOrder, verifyDriveOrder);
+
+        // Restore original drive order
+        EXPECT_TRUE(mUmObj->setAxisDriveOrder (currentDriveOrder, mUmId));
+
+        // Verify restored drive order
+        int restoredDriveOrder = mUmObj->getAxisDriveOrder (mUmId);
+        EXPECT_EQ(currentDriveOrder, restoredDriveOrder);
     }
 
     // Main

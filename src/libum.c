@@ -2,7 +2,7 @@
  * A software development kit for Sensapex 2015 series Micromanipulators,
  * Microscope stage and Pressure controller
  *
- * Copyright (c) 2015-2024, Sensapex Oy
+ * Copyright (c) 2015-2026, Sensapex Oy
  * All rights reserved.
  *
  * This file is part of 2015 series Sensapex uMx device SDK
@@ -35,8 +35,8 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.504"
-#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2024. All rights reserved"
+#define LIBUM_VERSION_STR    "v1.600"
+#define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2026. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
 #define LIBUM_ANY_IPV4_ADDR  "0.0.0.0"
@@ -633,6 +633,42 @@ int um_set_log_func(um_state *hndl, const int verbose, um_log_print_func func, c
     return 0;
 }
 
+int um_set_calibration_callback(um_state *hndl, um_calibration_notify_func func, const void *arg) {
+    if (!hndl) {
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    }
+    hndl->func_um_calibration_completed = func;
+    hndl->calibration_completed_arg = arg;
+    return 0;
+}
+
+int um_set_position_drive_callback(um_state *hndl, um_position_drive_notify_func func, const void *arg) {
+    if (!hndl) {
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    }
+    hndl->func_um_position_drive_completed = func;
+    hndl->position_drive_completed_arg = arg;
+    return 0;
+}
+
+int um_set_init_zero_callback(um_state *hndl, um_init_zero_notify_func func, const void *arg) {
+    if (!hndl) {
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    }
+    hndl->func_um_init_zero_completed = func;
+    hndl->init_zero_completed_arg = arg;
+    return 0;
+}
+
+int um_set_status_changed_callback(um_state *hndl, um_status_changed_notify_func func, const void *arg) {
+    if (!hndl) {
+        return set_last_error(hndl, LIBUM_NOT_OPEN);
+    }
+    hndl->func_um_status_changed = func;
+    hndl->status_changed_arg = arg;
+    return 0;
+}
+
 int um_set_refresh_time_limit(um_state *hndl, const int value) {
     if (!hndl) {
         return set_last_error (hndl, LIBUM_NOT_OPEN);
@@ -668,6 +704,14 @@ int um_get_status(um_state *hndl, const int dev) {
 int um_is_busy(um_state *hndl, const int dev) {
     int status = um_get_status (hndl, dev);
     return um_is_busy_status (status);
+}
+
+int um_is_moving(um_state *hndl, const int dev) {
+    int status = um_get_status(hndl, dev);
+    if (status < 0) {
+        return status;
+    }
+    return status & (LIBUM_STATUS_X_MOVING | LIBUM_STATUS_Y_MOVING | LIBUM_STATUS_Z_MOVING | LIBUM_STATUS_W_MOVING);
 }
 
 int um_get_drive_status(um_state *hndl, const int dev) {
@@ -1044,6 +1088,61 @@ int um_get_soft_start_mode(um_state *hndl, const int dev) {
     return um_get_ext_feature (hndl, dev, SMCP10_EXT_FEAT_SOFT_START);
 }
 
+// Internal validation function - exposed for unit testing only
+#ifdef BUILD_TESTS
+LIBUM_SHARED_EXPORT int is_valid_axis_drive_order(const int order);
+#else
+static int is_valid_axis_drive_order(const int order);
+#endif
+
+int is_valid_axis_drive_order(const int order) {
+    int i;
+    int used[4] = {0, 0, 0, 0};
+    unsigned int value = (unsigned int) order;
+
+    for (i = 0; i < 4; i++) {
+        int axis = value & 0xFF;
+        if (axis > 3) {
+            return 0;  // Invalid axis number
+        }
+        if (used[axis]) {
+            return 0;  // Duplicate axis
+        }
+        used[axis] = 1;
+        value >>= 8;
+    }
+    return 1;
+}
+
+int um_set_axis_drive_order(um_state *hndl, const int dev, const int order) {
+    if (!hndl) {
+        return set_last_error (hndl, LIBUM_NOT_OPEN);
+    }
+    if (is_invalid_dev (dev)) {
+        return set_last_error (hndl, LIBUM_INVALID_DEV);
+    }
+    if (!is_valid_axis_drive_order (order)) {
+        return set_last_error (hndl, LIBUM_INVALID_ARG);
+    }
+    return um_set_param (hndl, dev, SMCP1_PARAM_AXIS_DRIVE_ORDER, order);
+}
+
+int um_get_axis_drive_order(um_state *hndl, const int dev) {
+    int value;
+    int ret;
+    if (!hndl) {
+        return set_last_error (hndl, LIBUM_NOT_OPEN);
+    }
+    if (is_invalid_dev (dev)) {
+        return set_last_error (hndl, LIBUM_INVALID_DEV);
+    }
+    ret = um_get_param (hndl, dev, SMCP1_PARAM_AXIS_DRIVE_ORDER, &value);
+    if (ret < 0) {
+        return ret;
+    }
+    return value;
+}
+
 #define UMP_RECEIVE_ACK_GOT  1
 #define UMP_RECEIVE_RESP_GOT 2
 
@@ -1152,6 +1251,10 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
                     hndl->last_status[sender_id] = status = ntohl(*data_ptr);
                     um_log_print (hndl, 2, __PRETTY_FUNCTION__, "dev %d updated status %d (0x%08X)", sender_id, status,
                                   status);
+                    if (hndl->func_um_status_changed) {
+                        hndl->func_um_status_changed(sender_id, status, hndl->status_changed_arg);
+                        um_log_print(hndl, 3, __PRETTY_FUNCTION__, "dev %d status changed callback called", sender_id);
+                    }
                 }
                 break;
             case SMCP1_NOTIFY_GOTO_POS_COMPLETED:
@@ -1167,10 +1270,29 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
                         um_log_print (hndl, 2, __PRETTY_FUNCTION__, "dev %d updated drive status %d msg id %d",
                                       sender_id, status, message_id);
                         hndl->drive_status_id[sender_id] = message_id;
+                        if (hndl->func_um_position_drive_completed) {
+                            hndl->func_um_position_drive_completed(sender_id, hndl->drive_status[sender_id],
+                                                                   hndl->position_drive_completed_arg);
+                            um_log_print(hndl, 3, __PRETTY_FUNCTION__,
+                                         "dev %d position drive completed callback called", sender_id);
+                        }
                     } else {
                         um_log_print (hndl, 2, __PRETTY_FUNCTION__, "dev %d duplicated drive status %d msg id %d",
                                       sender_id, status, message_id);
                     }
+                }
+                break;
+            case SMCP1_NOTIFY_GOTO_ZERO_COMPLETED:
+                if (data_size > 0 && (data_type == SMCP1_DATA_INT32 || data_type == SMCP1_DATA_UINT32)) {
+                    status = ntohl(*data_ptr);
+                } else {
+                    status = -1;
+                }
+                um_log_print (hndl, 2, __PRETTY_FUNCTION__, "dev %d init zero completed, status %d", sender_id, status);
+                if (hndl->func_um_init_zero_completed) {
+                    hndl->func_um_init_zero_completed(sender_id, status, hndl->init_zero_completed_arg);
+                    um_log_print(hndl, 3, __PRETTY_FUNCTION__,
+                                 "dev %d init zero completed callback called", sender_id);
                 }
                 break;
             case SMCP1_NOTIFY_UMA_SAMPLES:
@@ -1186,6 +1308,17 @@ int um_recv_ext(um_state *hndl, um_message *msg, int *ext_data_type, void *ext_d
                 um_log_print (hndl, 2, __PRETTY_FUNCTION__, "Version returned", __PRETTY_FUNCTION__);
                 break;
             case SMCP1_NOTIFY_CALIBRATE_COMPLETED:
+                if (data_size > 0 && (data_type == SMCP1_DATA_INT32 || data_type == SMCP1_DATA_UINT32)) {
+                    status = ntohl(*data_ptr);
+                } else {
+                    status = -1;
+                }
+                um_log_print (hndl, 2, __PRETTY_FUNCTION__, "Calibration completed, status %d", status);
+                if (hndl->func_um_calibration_completed) {
+                    hndl->func_um_calibration_completed(sender_id, status, hndl->calibration_completed_arg);
+                    um_log_print(hndl, 3, __PRETTY_FUNCTION__,
+                                 "dev %d calibration completed callback called", sender_id);
+                }
                 break;
             case SMCP1_NOTIFY_PRESSURE_CHANGED:
                 if (data_size > 0 && (data_type == SMCP1_DATA_INT32 || data_type == SMCP1_DATA_UINT32)) {
@@ -1412,7 +1545,8 @@ static int um_send_msg(um_state *hndl, const int dev, const int cmd, const int a
         options |= SMCP1_OPT_REQ_ACK;
         ack_requested = true;
     }
-    if (cmd == SMCP1_CMD_GOTO_MEM || cmd == SMCP1_CMD_GOTO_POS) {
+    if (cmd == SMCP1_CMD_GOTO_MEM || cmd == SMCP1_CMD_GOTO_POS ||
+        cmd == SMCP1_CMD_INIT_ZERO || cmd == SMCP1_CMD_CALIBRATE) {
         options |= SMCP1_OPT_REQ_NOTIFY;
     }
     // SDK emulating a device
@@ -2056,8 +2190,8 @@ int umc_set_pressure_setting(um_state *hndl, const int dev, const int channel, c
     if (!hndl) {
         return set_last_error (hndl, LIBUM_NOT_OPEN);
     }
-    // Currently uMv pressure range is -70 - +70kPa
-    if (channel < 1 || channel > 8 || pressure_kpa < -100.0 || pressure_kpa > 100.0) {
+    // Currently uMv pressure range is -100 - +500kPa
+    if (channel < 1 || channel > 8 || pressure_kpa < -100.0 || pressure_kpa > 500.0) {
         return set_last_error (hndl, LIBUM_INVALID_ARG);
     }
     args[0] = channel - 1;
