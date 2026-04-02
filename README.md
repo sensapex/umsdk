@@ -63,6 +63,10 @@ Precompiled Doxygen documentation can be found http://dist.sensapex.com/misc/um-
 
 ### Changelog
 
+#### Version 1.601
+
+- Enable use of parallel SDK instances on Linux
+
 #### Version 1.600
 
 - Configurable axis drive order

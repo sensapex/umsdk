@@ -35,7 +35,7 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.600"
+#define LIBUM_VERSION_STR    "v1.601"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2026. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -429,7 +429,7 @@ static bool udp_init(um_state *hndl, const char *broadcast_address) {
         ok = false;
     }
 
-    // Dynamic port used in windows by default
+    // Dynamic port used by default
     if (!hndl->local_port) {
         hndl->laddr.sin_port = 0;
         // change local port to avoid conflict on localhost testing
@@ -562,20 +562,11 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout, co
     }
     memset(hndl, 0, sizeof (um_state));
     hndl->socket = INVALID_SOCKET;
-// Use dynamic local port 0 in windows unless explicitly requested with UDP port number as group
-#ifdef _WINDOWS
+    // Use dynamic local port 0 unless explicitly requested with UDP port number as group
     if(group >= SMCP1_DEF_UDP_PORT)
         hndl->udp_port = hndl->local_port = group;
     else
         hndl->udp_port = SMCP1_DEF_UDP_PORT + group;
-#else
-    // In linux ports need to symmetric. On the other hand multiple applications can share the same port.
-    if (group >= SMCP1_DEF_UDP_PORT) {
-        hndl->local_port = hndl->udp_port = group;
-    } else {
-        hndl->local_port = hndl->udp_port = SMCP1_DEF_UDP_PORT + group;
-    }
-#endif
     hndl->retransmit_count = 3;
     hndl->refresh_time_limit = LIBUM_DEF_REFRESH_TIME;
     hndl->timeout = timeout;

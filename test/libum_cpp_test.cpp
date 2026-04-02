@@ -46,7 +46,7 @@ namespace {
     }
 
     TEST_F(LibumTestBasicCpp, test_version) {
-        EXPECT_STREQ("v1.600", mUmObj->version ());
+        EXPECT_STREQ("v1.601", mUmObj->version ());
     }
 
     TEST_F(LibumTestBasicCpp, test_open_isOpen_close) {
