@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.29)
 project(libum_test_project
         LANGUAGES C CXX)
 
+option(BUILD_TESTS "Build the tests" ON)
+
 # If code coverage data is collected.
 if(ENABLE_COVERAGE)
     # set compiler flags
@@ -35,13 +37,15 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 
 # Recompile libum also
-#add_subdirectory(../src libum) #libum
+if(NOT TARGET um)
+    add_subdirectory(../src libum)
+endif()
 
 include(FetchContent)
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.13.0
+    GIT_TAG v1.17.0
 )
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -73,6 +77,10 @@ target_link_libraries(libum_test
         GTest::gtest_main
         um
 )
+
+if (WIN32)
+    target_link_libraries(libum_test PRIVATE ws2_32)
+endif ()
 
 # Finally. Include test runner and test cases.
 include(GoogleTest)

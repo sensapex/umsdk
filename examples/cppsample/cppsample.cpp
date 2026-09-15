@@ -507,7 +507,7 @@ int main(int argc, char *argv[])
         else
             printf("Target position: %3.2f %3.2f %3.2f %3.2f\n", x, y, z, d);
 
-        if(!(ret = um.gotoPos(x, y, z, d, params.speed)))
+        if(!(ret = um.gotoPos(x, y, z, d, static_cast<float>(params.speed))))
         {
             fprintf(stderr, "Goto position failed - %s\n", um.lastErrorText());
             continue;

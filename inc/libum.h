@@ -1,7 +1,7 @@
 /**
  * @file    libum.h
  * @author  Sensapex <support@sensapex.com>
- * @date    23 Jan 2026
+ * @date    15 Sep 2026
  * @brief   This file contains a public API for the 2015 series Sensapex uM product family SDK
  * @copyright   Copyright (c) 2016-2026 Sensapex. All rights reserved
  *
@@ -74,6 +74,8 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 #endif
 
 #include <math.h>
+
+#define LIBUM_IPV4_ADDRESS_LENGTH 16      /**< Maximum length of an IPv4 address in text form, including NUL */
 
 #ifdef _WINDOWS
 # ifndef LIBUM_SHARED_DO_NOT_EXPORT
@@ -173,6 +175,19 @@ typedef struct um_positions_s
     float speed_d;         /**< D-actuator movement speed between last two position updates */
     unsigned long long updated_us; /**< Timestamp (in microseconds) when positions were updated */
 } um_positions;
+
+/**
+ * @brief A device found during multi-interface discovery.
+ *
+ * Device IDs are expected to be unique within a network. The same numeric ID may
+ * occur more than once when devices with overlapping IDs reside on separate networks.
+ * The interface address is suitable for passing to #um_open_on_interface.
+ */
+typedef struct um_discovered_device_s
+{
+    int dev;                                                /**< Device ID */
+    char interface_address[LIBUM_IPV4_ADDRESS_LENGTH];     /**< Local IPv4 address used for discovery */
+} um_discovered_device;
 
 /**
  * @brief Prototype for the log print callback function
@@ -303,6 +318,24 @@ typedef struct um_state_s
  */
 
 LIBUM_SHARED_EXPORT um_state *um_open(const char *udp_target_address, const unsigned int timeout, const int group);
+
+/**
+ * @brief Open UDP socket with explicit local and remote IPv4 addresses.
+ *
+ * @param   local_bind_address    local IPv4 address to bind to, NULL for wildcard binding
+ * @param   udp_target_address    typically the default UDP broadcast address
+ * @param   timeout               message timeout in milliseconds
+ * @param   group                 0 for default group 'A' on TSC UI
+ *
+ * Binding to a specific local address selects the network interface used for
+ * broadcast and unicast traffic. Passing NULL selects the operating system's
+ * default interface.
+ *
+ * @return  Pointer to created session handle. NULL if an error occurred
+ */
+LIBUM_SHARED_EXPORT um_state *um_open_on_interface(const char *local_bind_address,
+                                                   const char *udp_target_address,
+                                                   const unsigned int timeout, const int group);
 
 /**
  * @brief Close the UDP socket if open and free the state structure allocated in open
@@ -1065,13 +1098,13 @@ LIBUM_SHARED_EXPORT int umc_pressure_calib(um_state *hndl, const int dev, const 
 /**
  * @brief Get list of compatible devices.
  *        Call to this function attempts to cause fast list update by sending a ping as broadcast
- * @param   hndl      Pointer to session handle
+ * @param      hndl   Pointer to session handle
  * @param[out] devs   Pointer to list of devices found
  * @param      size   Size of the device list, number of integers
  *
  * This function should be called in this way
  * int devids[20];
- * int ret = um_cu_get_device_list(handle, devids, 20);
+ * int ret = um_get_device_list(handle, devids, 20);
  * for(i = 0; i < ret; i++)
  *    int dev = devids[i]; // do anything to the dev id
  *
@@ -1079,6 +1112,27 @@ LIBUM_SHARED_EXPORT int umc_pressure_calib(um_state *hndl, const int dev, const 
  */
 
 LIBUM_SHARED_EXPORT int um_get_device_list(um_state *hndl, int *devs, const int size);
+
+/**
+ * @brief Discover devices through every active non-loopback IPv4 interface.
+ *
+ * Each result contains the device ID and the local interface address through
+ * which that device responded.
+ *
+ * @param[out] devices       Result buffer, may be NULL when size is zero
+ * @param      size          Capacity of the result buffer
+ * @param      timeout       Message timeout in milliseconds
+ * @param      group         Device group, 0 for default group 'A' on TSC UI
+ *
+ * The timeout applies independently to each interface. A scan can spend up
+ * to approximately four timeout periods on an interface without responses:
+ * up to three ping/retry waits followed by one receive-drain wait.
+ *
+ * @return  Number of results written, or a negative error code
+ */
+
+LIBUM_SHARED_EXPORT int um_discover_devices(um_discovered_device *devices, const int size,
+                                            const unsigned int timeout, const int group);
 
 /**
  * @brief  Clear SDK internal list of manipulators or other compatible devices,
@@ -1385,6 +1439,28 @@ public:
         }
     }
     /**
+     * @brief Open a socket with explicit local and remote IPv4 addresses.
+     *
+     * @param localBindAddress  local IPv4 address, NULL for the default interface selection
+     * @param broadcastAddress  UDP target address as a string with traditional IPv4 syntax e.g. "169.254.255.255"
+     * @param timeout           UDP timeout in milliseconds
+     * @param group             device group, default 0 is group 'A' on TSC
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
+    bool openOnInterface(const char *localBindAddress,
+                         const char *broadcastAddress = LIBUM_DEF_BCAST_ADDRESS,
+                         const unsigned int timeout = LIBUM_DEF_TIMEOUT, const int group = 0)
+    {
+        if (!_handle) {
+            return (_handle = um_open_on_interface(localBindAddress, broadcastAddress, timeout, group)) != NULL;
+        } else {
+            _handle->last_error = LIBUM_NOT_OPEN;
+            strcpy(_handle->errorstr_buffer, "Communication socket not open");
+            return false;
+        }
+    }
+    /**
      * @brief Check if socket is open for device communication
      * @return `true` if this instance of `LibUm` holds an open UDP socket.
      */
@@ -1675,6 +1751,21 @@ public:
     {   return um_get_device_list(_handle, devs, size); }
 
     /**
+     * @brief Discover devices through all active local IPv4 interfaces.
+     *
+     * @param[out] devices  Result buffer containing device/interface pairs
+     * @param      size     Result buffer capacity
+     * @param      timeout  Message timeout in milliseconds
+     * @param      group    Device group
+     *
+     * @return Number of results written, or a negative error code
+     */
+    static int discoverDevices(um_discovered_device *devices, const int size,
+                               const unsigned int timeout = LIBUM_DEF_TIMEOUT,
+                               const int group = LIBUM_DEF_GROUP)
+    {   return um_discover_devices(devices, size, timeout, group); }
+
+    /**
       * @brief Clear above device list from internal caches.
       *
       * @return `true` if operation was successful, `false` otherwise
@@ -1723,7 +1814,7 @@ public:
      *
      * @return `true` if operation was successful, `false` otherwise
      */
-    bool takeStep(const int step_x, const int step_y, const int step_z, const int step_d,
+    bool takeStep(const float step_x, const float step_y, const float step_z, const float step_d,
                   const int speed_x, const int speed_y, const int speed_z,
                   const int speed_d, const int mode = 0, const int max_acceleration = 0,
                   const int dev = LIBUM_USE_LAST_DEV)

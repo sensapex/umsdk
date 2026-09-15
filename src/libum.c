@@ -35,14 +35,32 @@
 #include "libum.h"
 #include "smcp1.h"
 
-#define LIBUM_VERSION_STR    "v1.601"
+#ifdef _WINDOWS
+#include <iphlpapi.h>
+#else
+#include <ifaddrs.h>
+#include <net/if.h>
+#endif
+
+#define LIBUM_VERSION_STR    "v1.602"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2026. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
 #define LIBUM_ANY_IPV4_ADDR  "0.0.0.0"
+#define LIBUM_MAX_INTERFACES 8
+
+typedef struct um_interface_s {
+    char address[LIBUM_IPV4_ADDRESS_LENGTH];
+    char broadcast_address[LIBUM_IPV4_ADDRESS_LENGTH];
+} um_interface;
 
 // 169.254.0.0/16
 #define LINK_LOCAL_IPV4_NET   0xA9FE0000
+
+static bool um_is_link_local_address(const IPADDR *address) {
+    return address &&
+           (ntohl (address->sin_addr.s_addr) & 0xffff0000U) == LINK_LOCAL_IPV4_NET;
+}
 
 typedef unsigned char um_message[LIBUM_MAX_MESSAGE_SIZE];
 
@@ -295,7 +313,7 @@ static bool udp_set_address(IPADDR *addr, const char *s) {
 }
 
 static int
-udp_recv(um_state *hndl, unsigned char *response, const size_t response_size, IPADDR *from, const int timeout) {
+udp_recv(um_state *hndl, unsigned char *response, const int response_size, IPADDR *from, const int timeout) {
     int ret;
     if ((ret = udp_select (hndl, timeout)) < 0) {
         hndl->last_os_errno = getLastError();
@@ -401,7 +419,45 @@ static bool udp_is_broadcast_address(IPADDR *addr) {
     return (ntohl(addr->sin_addr.s_addr) & 0xff) == 0xff;
 }
 
-static bool udp_init(um_state *hndl, const char *broadcast_address) {
+#ifdef __linux__
+static bool udp_bind_to_interface(um_state *hndl, const char *local_bind_address) {
+    struct ifaddrs *interface_addresses = NULL;
+    struct ifaddrs *interface_address;
+    char address[LIBUM_IPV4_ADDRESS_LENGTH];
+    bool found = false;
+    bool bound = false;
+
+    if (!local_bind_address || !strcmp(local_bind_address, LIBUM_ANY_IPV4_ADDR)) {
+        return true;
+    }
+    if (getifaddrs(&interface_addresses) != 0) {
+        return false;
+    }
+    for (interface_address = interface_addresses;
+         interface_address;
+         interface_address = interface_address->ifa_next) {
+        if (!interface_address->ifa_addr ||
+            interface_address->ifa_addr->sa_family != AF_INET ||
+            !inet_ntop(AF_INET, &((IPADDR *) interface_address->ifa_addr)->sin_addr,
+                       address, sizeof(address)) ||
+            strcmp(address, local_bind_address)) {
+            continue;
+        }
+        found = true;
+        bound = setsockopt(hndl->socket, SOL_SOCKET, SO_BINDTODEVICE,
+                           interface_address->ifa_name,
+                           (socklen_t) strlen(interface_address->ifa_name) + 1) == 0;
+        break;
+    }
+    freeifaddrs(interface_addresses);
+    if (!found) {
+        errno = EADDRNOTAVAIL;
+    }
+    return bound;
+}
+#endif
+
+static bool udp_init(um_state *hndl, const char *broadcast_address, const char *local_bind_address) {
     bool ok = true;
 #ifdef _WINDOWS
     WSADATA wsaData;
@@ -423,11 +479,18 @@ static bool udp_init(um_state *hndl, const char *broadcast_address) {
         sprintf(hndl->errorstr_buffer, "invalid remote address - %s\n", strerror (hndl->last_error));
         ok = false;
     }
-    if (ok && !udp_set_address (&hndl->laddr, LIBUM_ANY_IPV4_ADDR)) {
+    if (ok && !udp_set_address (&hndl->laddr, local_bind_address ? local_bind_address : LIBUM_ANY_IPV4_ADDR)) {
         hndl->last_os_errno = getLastError();
         sprintf(hndl->errorstr_buffer, "invalid local address - %s\n", strerror (hndl->last_error));
         ok = false;
     }
+#ifdef __linux__
+    if (ok && !udp_bind_to_interface(hndl, local_bind_address)) {
+        hndl->last_os_errno = getLastError();
+        sprintf(hndl->errorstr_buffer, "interface bind failed - %s\n", strerror (hndl->last_os_errno));
+        ok = false;
+    }
+#endif
 
     // Dynamic port used by default
     if (!hndl->local_port) {
@@ -464,15 +527,20 @@ static bool udp_init(um_state *hndl, const char *broadcast_address) {
         sprintf(hndl->errorstr_buffer, "bind failed - %s\n", strerror (hndl->last_error));
         ok = false;
     }
+    bool initialized = ok && ret >= 0;
+    if (!initialized && hndl->socket != INVALID_SOCKET) {
+        closesocket (hndl->socket);
+        hndl->socket = INVALID_SOCKET;
+    }
 #ifdef _WINDOWS
-    if(!ok)
+    if (!initialized) {
         WSACleanup();
+    }
 #endif
-    return ok && ret >= 0;
+    return initialized;
 }
 
 static int set_last_error(um_state *hndl, int code) {
-    char *txt;
     if (hndl) {
         hndl->last_error = code;
         const char *txt = um_errorstr (code);
@@ -542,7 +610,8 @@ static int um_send(um_state *hndl, const int dev, const unsigned char *data, int
     return ret;
 }
 
-um_state *um_open(const char *udp_target_address, const unsigned int timeout, const int group) {
+um_state *um_open_on_interface(const char *local_bind_address, const char *udp_target_address,
+                               const unsigned int timeout, const int group) {
     int i;
     um_state *hndl;
     if (group < SMCP1_DEF_UDP_PORT && (group < 0 || group > 10)) {
@@ -580,11 +649,15 @@ um_state *um_open(const char *udp_target_address, const unsigned int timeout, co
     hndl->own_id = SMCP1_ALL_PCS - 100 - (um_get_timestamp_us () & 100);
     hndl->timeout = timeout;
 
-    if (!udp_init (hndl, udp_target_address)) {
+    if (!udp_init (hndl, udp_target_address, local_bind_address)) {
         free (hndl);
         return NULL;
     }
     return hndl;
+}
+
+um_state *um_open(const char *udp_target_address, const unsigned int timeout, const int group) {
+    return um_open_on_interface (NULL, udp_target_address, timeout, group);
 }
 
 void um_close(um_state *hndl) {
@@ -756,7 +829,9 @@ static int isnanf(const float arg) { return isnan(arg); }
 
 #endif
 
-static bool um_arg_undef(const float arg) { return isnanf (arg) || arg == SMCP1_ARG_UNDEF || arg == INT32_MIN; }
+static bool um_arg_undef(const float arg) {
+    return isnanf (arg) || arg == (float) SMCP1_ARG_UNDEF || arg == (float) INT32_MIN;
+}
 
 static bool um_invalid_pos(const float pos) { return (pos < -1000 || pos > LIBUM_MAX_POSITION) && !um_arg_undef (pos); }
 
@@ -2080,10 +2155,14 @@ int um_get_device_list(um_state *hndl, int *devs, const int size) {
     if (!hndl) {
         return set_last_error (hndl, LIBUM_NOT_OPEN);
     }
-    int i, ret, found = 0;
+    if (size < 0) {
+        return set_last_error (hndl, LIBUM_INVALID_ARG);
+    }
 
+    int i, ret, found = 0;
     um_cmd_options (hndl, SMCP1_OPT_REQ_ACK);
-    if ((ret = um_ping (hndl, SMCP1_ALL_DEVICES)) < 0 && ret != LIBUM_INVALID_DEV && ret != LIBUM_TIMEOUT) {
+    if ((ret = um_ping (hndl, SMCP1_ALL_DEVICES)) < 0 &&
+        ret != LIBUM_INVALID_DEV && ret != LIBUM_TIMEOUT) {
         return ret;
     }
 
@@ -2097,7 +2176,7 @@ int um_get_device_list(um_state *hndl, int *devs, const int size) {
             continue;
         }
         if (hndl->addresses[i].sin_family != 0) {
-            if (devs) {
+            if (devs && found < size) {
                 int sno = 0;
                 if (um_resolve_sno (i, &sno)) {
                     devs[found] = sno;
@@ -2110,6 +2189,176 @@ int um_get_device_list(um_state *hndl, int *devs, const int size) {
                 break;
             }
         }
+    }
+    return found;
+}
+
+static bool um_add_interface(um_interface *interfaces, int *count, const int size,
+                             const IPADDR *address, const IPADDR *netmask) {
+    if (!interfaces || !count || *count >= size || !address ||
+        !um_is_link_local_address (address) ||
+        !inet_ntop (AF_INET, &address->sin_addr, interfaces[*count].address,
+                    LIBUM_IPV4_ADDRESS_LENGTH)) {
+        return false;
+    }
+    if (ntohl (address->sin_addr.s_addr) >> 24 == 127) {
+        return false;
+    }
+
+    int i;
+    for (i = 0; i < *count; i++) {
+        if (!strcmp (interfaces[i].address, interfaces[*count].address)) {
+            return false;
+        }
+    }
+
+    if (netmask) {
+        struct in_addr broadcast;
+        uint32_t interface_address = ntohl (address->sin_addr.s_addr);
+        uint32_t interface_netmask = ntohl (netmask->sin_addr.s_addr);
+        broadcast.s_addr = htonl (interface_address | ~interface_netmask);
+        if (!inet_ntop (AF_INET, &broadcast, interfaces[*count].broadcast_address,
+                        LIBUM_IPV4_ADDRESS_LENGTH)) {
+            return false;
+        }
+    } else {
+        strcpy (interfaces[*count].broadcast_address, LIBUM_DEF_BCAST_ADDRESS);
+    }
+    (*count)++;
+    return true;
+}
+
+static int um_get_interface_addresses(um_interface *interfaces, const int size) {
+    int count = 0;
+#ifdef _WINDOWS
+    ULONG buffer_size = 15000;
+    IP_ADAPTER_ADDRESSES *adapter_addresses = (IP_ADAPTER_ADDRESSES *) malloc (buffer_size);
+    if (!adapter_addresses) {
+        return -1;
+    }
+
+    DWORD result = GetAdaptersAddresses (AF_INET, 0, NULL, adapter_addresses, &buffer_size);
+    if (result == ERROR_BUFFER_OVERFLOW) {
+        IP_ADAPTER_ADDRESSES *resized_addresses =
+            (IP_ADAPTER_ADDRESSES *) realloc (adapter_addresses, buffer_size);
+        if (!resized_addresses) {
+            free (adapter_addresses);
+            return -1;
+        }
+        adapter_addresses = resized_addresses;
+        result = GetAdaptersAddresses (AF_INET, 0, NULL, adapter_addresses, &buffer_size);
+    }
+    if (result == NO_ERROR) {
+        IP_ADAPTER_ADDRESSES *adapter;
+        for (adapter = adapter_addresses; adapter && count < size; adapter = adapter->Next) {
+            if (adapter->OperStatus != IfOperStatusUp) {
+                continue;
+            }
+            IP_ADAPTER_UNICAST_ADDRESS *unicast;
+            for (unicast = adapter->FirstUnicastAddress; unicast && count < size; unicast = unicast->Next) {
+                struct sockaddr *sockaddr = unicast->Address.lpSockaddr;
+                if (!sockaddr || sockaddr->sa_family != AF_INET) {
+                    continue;
+                }
+                IPADDR netmask;
+                memset (&netmask, 0, sizeof (netmask));
+                uint32_t prefix = unicast->OnLinkPrefixLength;
+                if (prefix <= 32) {
+                    netmask.sin_addr.s_addr = htonl (prefix ? UINT32_MAX << (32 - prefix) : 0);
+                }
+                um_add_interface (interfaces, &count, size, (IPADDR *) sockaddr, &netmask);
+            }
+        }
+    }
+    free (adapter_addresses);
+#else
+    struct ifaddrs *interface_addresses = NULL;
+    if (getifaddrs (&interface_addresses) != 0) {
+        return -1;
+    }
+    struct ifaddrs *interface_address;
+    for (interface_address = interface_addresses;
+         interface_address && count < size;
+         interface_address = interface_address->ifa_next) {
+        if (!interface_address->ifa_addr ||
+            interface_address->ifa_addr->sa_family != AF_INET ||
+            !(interface_address->ifa_flags & IFF_UP) ||
+            !(interface_address->ifa_flags & IFF_BROADCAST) ||
+            (interface_address->ifa_flags & IFF_LOOPBACK)) {
+            continue;
+        }
+        um_add_interface (interfaces, &count, size,
+                          (IPADDR *) interface_address->ifa_addr,
+                          (IPADDR *) interface_address->ifa_netmask);
+    }
+    freeifaddrs (interface_addresses);
+#endif
+    return count;
+}
+
+int um_discover_devices(um_discovered_device *devices, const int size,
+                         const unsigned int timeout, const int group) {
+    if (size < 0 || (size > 0 && !devices)) {
+        return LIBUM_INVALID_ARG;
+    }
+    if ((group < SMCP1_DEF_UDP_PORT && (group < 0 || group > 10)) ||
+        group > SMCP1_DEF_UDP_PORT + 10 || timeout > LIBUM_MAX_TIMEOUT) {
+        return LIBUM_INVALID_ARG;
+    }
+    if (size == 0) {
+        return 0;
+    }
+
+    um_interface interfaces[LIBUM_MAX_INTERFACES];
+    int interface_count = um_get_interface_addresses (interfaces, LIBUM_MAX_INTERFACES);
+    if (interface_count <= 0) {
+        interface_count = 1;
+        strcpy (interfaces[0].address, LIBUM_ANY_IPV4_ADDR);
+        strcpy (interfaces[0].broadcast_address, LIBUM_DEF_BCAST_ADDRESS);
+    }
+
+    int *devs = (int *) malloc (LIBUM_MAX_DEVS * sizeof (*devs));
+    if (!devs) {
+        return LIBUM_OS_ERROR;
+    }
+
+    int found = 0;
+    int discovery_error = 0;
+    int interface_index;
+    for (interface_index = 0; interface_index < interface_count; interface_index++) {
+        um_state *hndl = um_open_on_interface (interfaces[interface_index].address,
+                                                interfaces[interface_index].broadcast_address,
+                                                timeout, group);
+        if (!hndl) {
+            if (!discovery_error) {
+                discovery_error = LIBUM_OS_ERROR;
+            }
+            continue;
+        }
+
+        int device_count = um_get_device_list (hndl, devs, LIBUM_MAX_DEVS);
+        if (device_count < 0 && device_count != LIBUM_TIMEOUT && !discovery_error) {
+            discovery_error = device_count;
+        }
+        if (device_count > 0) {
+            int device_index;
+            for (device_index = 0; device_index < device_count && found < size; device_index++) {
+                devices[found].dev = devs[device_index];
+                strncpy (devices[found].interface_address,
+                         interfaces[interface_index].address,
+                         LIBUM_IPV4_ADDRESS_LENGTH);
+                devices[found].interface_address[LIBUM_IPV4_ADDRESS_LENGTH - 1] = '\0';
+                found++;
+            }
+        }
+        um_close (hndl);
+        if (found >= size) {
+            break;
+        }
+    }
+    free (devs);
+    if (!found && discovery_error) {
+        return discovery_error;
     }
     return found;
 }

@@ -33,7 +33,8 @@ add_library(um_static STATIC libum.c)
 
 if (WIN32)
     # For gcc
-    target_link_libraries(um ws2_32)
+    target_link_libraries(um PRIVATE ws2_32 iphlpapi)
+    target_link_libraries(um_static PUBLIC ws2_32 iphlpapi)
 endif ()
 
 install(TARGETS um um_static DESTINATION $ENV{HOME}/lib)

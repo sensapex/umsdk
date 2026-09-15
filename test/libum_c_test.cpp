@@ -6,7 +6,7 @@ namespace {
     TEST(LibumTestBasicC, test_um_get_version) {
         const char *version = um_get_version ();
         // Expect two strings not to be equal.
-        EXPECT_STREQ("v1.601", version);
+        EXPECT_STREQ("v1.602", version);
     }
 
     TEST(LibumTestBasicC, test_um_get_timestamp_us) {
@@ -73,6 +73,25 @@ namespace {
             um_close (umHandle);
             umHandle = NULL;
         }
+    }
+
+    TEST(LibumTestBasicC, um_open_on_interface) {
+        um_state *umHandle = um_open_on_interface ("127.0.0.1", "127.0.0.1", 100, 0);
+        EXPECT_NE(nullptr, umHandle);
+        if (umHandle) {
+            EXPECT_EQ(inet_addr ("127.0.0.1"), umHandle->laddr.sin_addr.s_addr);
+            um_close (umHandle);
+        }
+
+        umHandle = um_open_on_interface ("INVALID-IP", LIBUM_DEF_BCAST_ADDRESS, 100, 0);
+        EXPECT_EQ(nullptr, umHandle);
+    }
+
+    TEST(LibumTestBasicC, um_discover_devices_validation) {
+        EXPECT_EQ(LIBUM_INVALID_ARG,
+                  um_discover_devices (NULL, 1, LIBUM_DEF_TIMEOUT, LIBUM_DEF_GROUP));
+        EXPECT_EQ(LIBUM_INVALID_ARG,
+                  um_discover_devices (NULL, 0, LIBUM_MAX_TIMEOUT + 1, LIBUM_DEF_GROUP));
     }
 
 }

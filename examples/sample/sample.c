@@ -26,7 +26,7 @@
 #include <stdbool.h>
 #include "libum.h"
 
-#define VERSION_STR   "v0.125"
+#define VERSION_STR   "v0.126"
 #define COPYRIGHT "Copyright (c) Sensapex. All rights reserved"
 
 #define DEV     1
@@ -37,7 +37,7 @@ typedef struct params_s
     float x, y, z, d, X, Y, Z, D, pressure_kpa, speed;
     int verbose, update, loop, dev, timeout, value, dim_leds, group;
     int calibrate_pressure, pressure_channel, valve_channel, reset_fluid_detector, pressure_sensor;
-    bool lens_position, read_fluid_detectors, init_zero, oscillate;
+    bool lens_position, read_fluid_detectors, init_zero, oscillate, scan;
     char *address;
 } params_struct;
 
@@ -46,6 +46,7 @@ void usage(char **argv)
     fprintf(stderr,"usage: %s [opts]\n", argv[0]);
     fprintf(stderr,"Generic options\n");
     fprintf(stderr,"-d\tdev (def: %d)\n", DEV);
+    fprintf(stderr,"-s\tspeed\n");
     fprintf(stderr,"-g\tgroup (def: 0)\n");
     fprintf(stderr,"-e\tverbose\n");
     fprintf(stderr,"-a\taddress (def: %s)\n", LIBUM_DEF_BCAST_ADDRESS);
@@ -64,6 +65,7 @@ void usage(char **argv)
     fprintf(stderr,"-n\tcount\tloop between current and target positions or take multiple relative steps into same direction\n");
     fprintf(stderr,"-0\tInitialise zero positions\n");
     fprintf(stderr,"-o\tOscillate with given amplitude\n");
+    fprintf(stderr,"-S\tScan (-xyzw distance, -n steps, -s speed, -u interval)\n");
 
     fprintf(stderr,"Get or set lens changer position\n");
     fprintf(stderr,"-L\t\tto get or set lens position, set if -v defined\n");
@@ -104,6 +106,7 @@ void parse_args(int argc, char *argv[], params_struct *params)
     params->timeout = LIBUM_DEF_TIMEOUT;
     params->init_zero = false;
     params->oscillate = false;
+    params->scan = false;
     for(i = 1; i < argc; i++)
     {
         if(argv[i][0] == '-')
@@ -157,6 +160,9 @@ void parse_args(int argc, char *argv[], params_struct *params)
                     params->timeout = v;
                 else
                     usage(argv);
+                break;
+            case 'S':
+                params->scan = true;
                 break;
             case 's':
                 if(i < argc-1 && sscanf(argv[++i],"%f",&f) == 1 && f > 0.0)
@@ -310,6 +316,13 @@ typedef struct {
     volatile step_motion_state_t state;
 } step_motion_ctx_t;
 
+// Struct passed as callback argument for position-drive completion tracking
+typedef struct {
+    int dev_id;
+    volatile int completion_status;
+    volatile bool completion_received;
+} position_drive_ctx_t;
+
 void status_changed_callback(int dev, int status, const void *arg)
 {
     step_motion_ctx_t *ctx = (step_motion_ctx_t *)arg;
@@ -329,6 +342,17 @@ void status_changed_callback(int dev, int status, const void *arg)
             }
         }
     }
+}
+
+void position_drive_complete_callback(int dev, int status, const void *arg)
+{
+    position_drive_ctx_t *ctx = (position_drive_ctx_t *)arg;
+
+    if (!ctx || dev != ctx->dev_id) {
+        return;
+    }
+    ctx->completion_status = status;
+    ctx->completion_received = true;
 }
 
 #define STEP_START_TIMEOUT_MS       100   // Time for motion to start after command
@@ -390,6 +414,45 @@ int um_take_step_sync(um_state *handle, int dev,
     ctx.state = STEP_MOTION_IDLE;
     um_set_status_changed_callback(handle, NULL, NULL);
     return 0;
+}
+
+int um_goto_position_ext_sync(um_state *handle, int dev,
+                         const float x, const float y, const float z, const float d,
+                         const float speedX, const float speedY, const float speedZ, const float speedD,
+                         const int mode, const int max_acc)
+{
+    int ret;
+    unsigned long long start_time;
+    position_drive_ctx_t ctx;
+
+    // Set up state tracking via callback argument
+    ctx.dev_id = dev;
+    ctx.completion_status = LIBUM_POS_DRIVE_FAILED;
+    ctx.completion_received = false;
+
+    // Process any pending messages before callback registration
+    um_receive(handle, 0);
+    um_set_position_drive_callback(handle, position_drive_complete_callback, &ctx);
+
+    ret = um_goto_position_ext(handle, dev, x, y, z, d,
+                       speedX, speedY, speedZ, speedD, mode, max_acc);
+    if (ret < 0) {
+        um_set_position_drive_callback(handle, NULL, NULL);
+        return ret;
+    }
+
+    // Wait for motion completion
+    start_time = um_get_timestamp_ms();
+    while (!ctx.completion_received) {
+        um_receive(handle, 0);
+        if ((um_get_timestamp_ms() - start_time) > STEP_MOVE_TIMEOUT_MS) {
+            um_set_position_drive_callback(handle, NULL, NULL);
+            return -2; // Motion did not complete in time
+        }
+    }
+
+    um_set_position_drive_callback(handle, NULL, NULL);
+    return ctx.completion_status < 0 ? ctx.completion_status : 0;
 }
 
 int main(int argc, char *argv[])
@@ -629,6 +692,51 @@ int main(int argc, char *argv[])
     }
     else
         printf("Current position: %3.2f %3.2f %3.2f %3.2f\n", home_x, home_y, home_z, home_d);
+
+    if(params.scan) {
+        unsigned long long start_time = um_get_timestamp_ms();
+        unsigned long long curr_time, prev_time = start_time;
+
+        float x = LIBUM_ARG_UNDEF;
+        float y = LIBUM_ARG_UNDEF;
+        float z = LIBUM_ARG_UNDEF;
+        float d = LIBUM_ARG_UNDEF;
+        if (params.x != 0.0f) x = home_x;
+        if (params.y != 0.0f) y = home_y;
+        if (params.z != 0.0f) z = home_z;
+        if (params.d != 0.0f) d = home_d;
+
+        printf("Starting scan with %d steps\n", params.loop);
+        for (int i = 0; i < params.loop; i++) {
+            x += params.x;
+            y += params.y;
+            z += params.z;
+            d += params.d;
+
+            ret = um_goto_position_ext_sync(handle, params.dev, x, y, z, d,
+                                            params.speed, params.speed, params.speed, params.speed,
+                                            1, 0);
+            if (ret < 0) {
+                fprintf(stderr, "Scan step %d failed - %s\n", i + 1, um_last_errorstr(handle));
+                break;
+            }
+
+            do {
+                curr_time = um_get_timestamp_ms();
+            } while (curr_time - prev_time < params.update);
+            prev_time = curr_time;
+
+            float cur_x, cur_y, cur_z, cur_d;
+            ret = um_get_positions(handle, params.dev, LIBUM_TIMELIMIT_DISABLED, &cur_x, &cur_y, &cur_z, &cur_d, NULL);
+            if (ret < 0) {
+                fprintf(stderr, "Get positions after scan step %d failed - %s\n", i + 1, um_last_errorstr(handle));
+                break;
+            }
+            printf("Scan step %d/%d complete: Position (%3.2f, %3.2f, %3.2f, %3.2f)\n", i + 1, params.loop, cur_x, cur_y, cur_z, cur_d);
+        }
+        um_close(handle);
+        exit(ret >= 0 ? 0 : -ret);
+    }
 
     do
     {

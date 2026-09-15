@@ -63,6 +63,12 @@ Precompiled Doxygen documentation can be found http://dist.sensapex.com/misc/um-
 
 ### Changelog
 
+#### Version 1.602
+
+- Add device discovery over multiple LinkLocal networks
+- Sample application: high frequency scan steps with um_goto_position_ext()
+- bugfix: LibUm::takeStep() incorrectly used integer arguments for position
+
 #### Version 1.601
 
 - Enable use of parallel SDK instances on Linux

@@ -2,6 +2,9 @@
 #include <libum.h>
 #include <smcp1.h>
 #include "libum_internal.h"
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
 
 #if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
 # ifndef _WINDOWS
@@ -15,6 +18,22 @@ namespace {
 
 #define UNDEFINED_UMX_INDEX     5
 #define UMX_DEFAULT_DEV_ID      1
+#define UMSDK_TEST_DEVICE_ID    "UMSDK_TEST_DEVICE_ID"
+
+    static int test_device_id() {
+        const char *value = std::getenv(UMSDK_TEST_DEVICE_ID);
+        if (!value || !*value) {
+            return UMX_DEFAULT_DEV_ID;
+        }
+
+        char *end = nullptr;
+        errno = 0;
+        const long parsed = std::strtol(value, &end, 10);
+        if (errno || end == value || *end != '\0' || parsed <= 0 || parsed > INT_MAX) {
+            return 0;
+        }
+        return static_cast<int>(parsed);
+    }
 
     // Basic Cpp tests
     class LibumTestBasicCpp : public ::testing::Test {
@@ -46,7 +65,7 @@ namespace {
     }
 
     TEST_F(LibumTestBasicCpp, test_version) {
-        EXPECT_STREQ("v1.601", mUmObj->version ());
+        EXPECT_STREQ("v1.602", mUmObj->version ());
     }
 
     TEST_F(LibumTestBasicCpp, test_open_isOpen_close) {
@@ -69,6 +88,15 @@ namespace {
         EXPECT_TRUE(mUmObj->open ());
         mUmObj->close ();
         EXPECT_FALSE(mUmObj->isOpen ());
+        mUmObj->close ();
+        EXPECT_FALSE(mUmObj->isOpen ());
+    }
+
+    TEST_F(LibumTestBasicCpp, test_openOnInterface) {
+        EXPECT_TRUE(mUmObj->openOnInterface ("127.0.0.1", "127.0.0.1", 100, 0));
+        EXPECT_TRUE(mUmObj->isOpen ());
+        EXPECT_FALSE(mUmObj->openOnInterface ("INVALID-IP", "127.0.0.1", 100, 0));
+        EXPECT_TRUE(mUmObj->isOpen ());
         mUmObj->close ();
         EXPECT_FALSE(mUmObj->isOpen ());
     }
@@ -231,7 +259,7 @@ namespace {
     // uMp spesific tests
     class LibumTestUmpCpp : public LibumTestBasicCpp {
     protected:
-        int mUmId = UMX_DEFAULT_DEV_ID;
+        int mUmId = test_device_id();
     };
 
     TEST_F(LibumTestUmpCpp, test_ping) {
@@ -386,7 +414,7 @@ namespace {
     }
 
     TEST_F(LibumTestUmpCpp, test_getPositions) {
-        const float unInitPosition = -123456.7890;
+        const float unInitPosition = -123456.7890f;
         float x1 = unInitPosition;
         float y1 = unInitPosition;
         float z1 = unInitPosition;
@@ -598,7 +626,7 @@ namespace {
         // Phase 1. Set reference point
         float x1, y1, z1, w1;
         const float KDeltaUm = 200;
-        const float KSpeedUms = 2.0 * KDeltaUm;
+        const int KSpeedUms = static_cast<int>(2.0f * KDeltaUm);
         EXPECT_TRUE(mUmObj->getPositions (&x1, &y1, &z1, &w1, mUmId, LIBUM_TIMELIMIT_DISABLED));
 
         // Phase 2. Move to target point

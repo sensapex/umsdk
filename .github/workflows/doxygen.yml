@@ -9,7 +9,7 @@ jobs:
     container: sensapex/spx-general-doxygen:0.1
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate Doxygen API documentation on branch '${{ github.ref_name }}'
         id: doxygen
@@ -19,7 +19,7 @@ jobs:
           echo "umsdk_version=$(cat doxygen-umsdk-version.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Upload Doxygen API documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ github.event.repository.name }}_${{ steps.doxygen.outputs.umsdk_version }}_${{ github.ref_name }}_api_docs
           path: ${{ github.workspace }}/doc/html
