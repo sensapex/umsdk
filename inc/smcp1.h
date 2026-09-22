@@ -253,6 +253,26 @@ typedef enum
     //  - 0 == A feature is not functional (disabled or/and not activated)
     SMCP1_CMD_GET_FEATURE_FUNCTIONALITY   = 49,
 
+    // Position-synchronous trigger output
+    // SET arguments (axis -1 disables; only axis is required in that case):
+    //  - axis (-1 disables)
+    //  - reference position in nm, SMCP1_ARG_UNDEF for current position
+    //  - spacing in nm
+    //  - output duration in us
+    //  - polarity (0 active-low/1 active-high)
+    SMCP1_CMD_SET_POSITION_TRIGGER        = 52,
+
+    // GET arguments: none
+    // Response:
+    //  - axis (-1 when disabled)
+    //  - resolved reference position in nm
+    //  - spacing in nm
+    //  - output duration in us
+    //  - polarity (0 active-low/1 active-high)
+    //  - trigger emitted count (UINT32)
+    //  - dropped trigger count (UINT32)
+    SMCP1_CMD_GET_POSITION_TRIGGER        = 53,
+
     // uMs extensions
     // Change microstep resolution mode without causing (intentional) movement
     // Arguments:

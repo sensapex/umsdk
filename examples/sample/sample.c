@@ -696,6 +696,7 @@ int main(int argc, char *argv[])
     if(params.scan) {
         unsigned long long start_time = um_get_timestamp_ms();
         unsigned long long curr_time, prev_time = start_time;
+        unsigned long long interval = (params.update >= 0 ? params.update : 0);
 
         float x = LIBUM_ARG_UNDEF;
         float y = LIBUM_ARG_UNDEF;
@@ -723,7 +724,7 @@ int main(int argc, char *argv[])
 
             do {
                 curr_time = um_get_timestamp_ms();
-            } while (curr_time - prev_time < params.update);
+            } while (curr_time - prev_time < interval);
             prev_time = curr_time;
 
             float cur_x, cur_y, cur_z, cur_d;

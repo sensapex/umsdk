@@ -1,12 +1,13 @@
 #include <gtest/gtest.h>
 #include <libum.h>
+#include <smcp1.h>
 #include <time.h>
 
 namespace {
     TEST(LibumTestBasicC, test_um_get_version) {
         const char *version = um_get_version ();
         // Expect two strings not to be equal.
-        EXPECT_STREQ("v1.602", version);
+        EXPECT_STREQ("v1.603", version);
     }
 
     TEST(LibumTestBasicC, test_um_get_timestamp_us) {

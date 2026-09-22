@@ -42,7 +42,7 @@
 #include <net/if.h>
 #endif
 
-#define LIBUM_VERSION_STR    "v1.602"
+#define LIBUM_VERSION_STR    "v1.603"
 #define LIBUM_COPYRIGHT      "Copyright (c) Sensapex 2017-2026. All rights reserved"
 
 #define LIBUM_MAX_MESSAGE_SIZE   1502
@@ -419,7 +419,7 @@ static bool udp_is_broadcast_address(IPADDR *addr) {
     return (ntohl(addr->sin_addr.s_addr) & 0xff) == 0xff;
 }
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 static bool udp_bind_to_interface(um_state *hndl, const char *local_bind_address) {
     struct ifaddrs *interface_addresses = NULL;
     struct ifaddrs *interface_address;
@@ -444,9 +444,17 @@ static bool udp_bind_to_interface(um_state *hndl, const char *local_bind_address
             continue;
         }
         found = true;
+#if defined(__linux__)
         bound = setsockopt(hndl->socket, SOL_SOCKET, SO_BINDTODEVICE,
                            interface_address->ifa_name,
                            (socklen_t) strlen(interface_address->ifa_name) + 1) == 0;
+#elif defined(__APPLE__)
+        uint32_t interface_index = if_nametoindex(interface_address->ifa_name);
+        if (interface_index) {
+            bound = setsockopt(hndl->socket, IPPROTO_IP, IP_BOUND_IF,
+                               &interface_index, sizeof(interface_index)) == 0;
+        }
+#endif
         break;
     }
     freeifaddrs(interface_addresses);
@@ -484,7 +492,7 @@ static bool udp_init(um_state *hndl, const char *broadcast_address, const char *
         sprintf(hndl->errorstr_buffer, "invalid local address - %s\n", strerror (hndl->last_error));
         ok = false;
     }
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
     if (ok && !udp_bind_to_interface(hndl, local_bind_address)) {
         hndl->last_os_errno = getLastError();
         sprintf(hndl->errorstr_buffer, "interface bind failed - %s\n", strerror (hndl->last_os_errno));
@@ -1984,6 +1992,101 @@ int um_get_axis_count(um_state *hndl, const int dev) {
     return value;
 }
 
+int um_set_position_trigger(um_state *hndl, const int dev,
+                            const um_position_trigger_config *config) {
+    enum { POSITION_TRIGGER_SET_ARG_COUNT = 5 };
+    int args[POSITION_TRIGGER_SET_ARG_COUNT];
+
+    if (!hndl) {
+        return set_last_error (hndl, LIBUM_NOT_OPEN);
+    }
+    if (is_invalid_dev (dev)) {
+        return set_last_error (hndl, LIBUM_INVALID_DEV);
+    }
+    if (!config) {
+        return set_last_error (hndl, LIBUM_INVALID_ARG);
+    }
+
+    switch (config->axis) {
+        case 'x':
+        case 'X':
+            args[0] = 0;
+            break;
+        case 'y':
+        case 'Y':
+            args[0] = 1;
+            break;
+        case 'z':
+        case 'Z':
+            args[0] = 2;
+            break;
+        case 'd':
+        case 'D':
+        case 'w':
+        case 'W':
+        case '4':
+            args[0] = 3;
+            break;
+        default:
+            args[0] = -1;
+            break;
+    }
+
+    if (args[0] < 0) {
+        return um_cmd (hndl, dev, SMCP1_CMD_SET_POSITION_TRIGGER, 1, args);
+    }
+    if (config->spacing_nm <= 0 || config->duration_us <= 0 ||
+        (config->polarity != 0 && config->polarity != 1)) {
+        return set_last_error (hndl, LIBUM_INVALID_ARG);
+    }
+
+    args[1] = config->reference_position_nm;
+    args[2] = config->spacing_nm;
+    args[3] = config->duration_us;
+    args[4] = config->polarity;
+    return um_cmd (hndl, dev, SMCP1_CMD_SET_POSITION_TRIGGER,
+                   POSITION_TRIGGER_SET_ARG_COUNT, args);
+}
+
+int um_get_position_trigger(um_state *hndl, const int dev,
+                            um_position_trigger_status *status) {
+    enum { POSITION_TRIGGER_GET_RESP_COUNT = 7 };
+    int ret;
+    int resp[POSITION_TRIGGER_GET_RESP_COUNT];
+
+    if (!hndl) {
+        return set_last_error (hndl, LIBUM_NOT_OPEN);
+    }
+    if (is_invalid_dev (dev)) {
+        return set_last_error (hndl, LIBUM_INVALID_DEV);
+    }
+    if (!status) {
+        return set_last_error (hndl, LIBUM_INVALID_ARG);
+    }
+
+    ret = um_send_msg (hndl, dev, SMCP1_CMD_GET_POSITION_TRIGGER, 0, NULL, 0, NULL,
+                       POSITION_TRIGGER_GET_RESP_COUNT, resp);
+    if (ret < 0) {
+        return ret;
+    }
+    if (ret < POSITION_TRIGGER_GET_RESP_COUNT ||
+        resp[0] < -1 || resp[0] >= 4 ||
+        (resp[0] >= 0 && (resp[2] <= 0 || resp[3] <= 0)) ||
+        (resp[4] != 0 && resp[4] != 1)) {
+        return set_last_error (hndl, LIBUM_INVALID_RESP);
+    }
+
+    static const char axis_names[] = {'x', 'y', 'z', 'd'};
+    status->config.axis = resp[0] >= 0 ? axis_names[resp[0]] : '\0';
+    status->config.reference_position_nm = resp[1];
+    status->config.spacing_nm = resp[2];
+    status->config.duration_us = resp[3];
+    status->config.polarity = resp[4];
+    status->trigger_emitted_count = (uint32_t) resp[5];
+    status->dropped_trigger_count = (uint32_t) resp[6];
+    return ret;
+}
+
 int um_get_positions(um_state *hndl, const int dev, const int time_limit, float *x, float *y, float *z, float *d,
                      int *elapsedptr) {
     int resp[4], ret = 0;
@@ -2397,7 +2500,7 @@ int um_get_uma_reg(um_state *hndl, const int dev, const uMaRegistry addr, int *v
     if (ret < 0) {
         return ret;
     }
-    if (resp[0] != addr || ret != 2) {
+    if (resp[0] != (int) addr || ret != 2) {
         return set_last_error (hndl, LIBUM_INVALID_RESP);
     }
     *value = resp[1];

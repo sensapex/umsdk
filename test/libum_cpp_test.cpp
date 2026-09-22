@@ -65,7 +65,41 @@ namespace {
     }
 
     TEST_F(LibumTestBasicCpp, test_version) {
-        EXPECT_STREQ("v1.602", mUmObj->version ());
+        EXPECT_STREQ("v1.603", mUmObj->version ());
+    }
+
+    TEST_F(LibumTestBasicCpp, test_position_trigger_validation) {
+        um_position_trigger_config config = {};
+        config.axis = 'x';
+        config.reference_position_nm = SMCP1_ARG_UNDEF;
+        config.spacing_nm = 1000;
+        config.duration_us = 10;
+        config.polarity = 1;
+
+        EXPECT_FALSE(mUmObj->setPositionTrigger (&config));
+        EXPECT_EQ(LIBUM_NOT_OPEN, mUmObj->lastError ());
+        um_position_trigger_status status = {};
+        EXPECT_FALSE(mUmObj->getPositionTrigger (&status));
+        EXPECT_EQ(LIBUM_NOT_OPEN, mUmObj->lastError ());
+
+        ASSERT_TRUE(mUmObj->open ());
+        EXPECT_FALSE(mUmObj->setPositionTrigger (nullptr, 1));
+        EXPECT_EQ(LIBUM_INVALID_ARG, mUmObj->lastError ());
+
+        config.spacing_nm = 0;
+        EXPECT_FALSE(mUmObj->setPositionTrigger (&config, 1));
+        EXPECT_EQ(LIBUM_INVALID_ARG, mUmObj->lastError ());
+        config.spacing_nm = 1000;
+        config.duration_us = 0;
+        EXPECT_FALSE(mUmObj->setPositionTrigger (&config, 1));
+        EXPECT_EQ(LIBUM_INVALID_ARG, mUmObj->lastError ());
+        config.duration_us = 10;
+        config.polarity = 2;
+        EXPECT_FALSE(mUmObj->setPositionTrigger (&config, 1));
+        EXPECT_EQ(LIBUM_INVALID_ARG, mUmObj->lastError ());
+
+        EXPECT_FALSE(mUmObj->getPositionTrigger (nullptr, 1));
+        EXPECT_EQ(LIBUM_INVALID_ARG, mUmObj->lastError ());
     }
 
     TEST_F(LibumTestBasicCpp, test_open_isOpen_close) {
@@ -149,6 +183,8 @@ namespace {
     }
 
     static void localLogCallBack(int level, const void *arg, const char *func, const char *message) {
+        (void)level;
+
         std::cout << "localLogCallBack called - " << (char *) arg << " - " << func << " - " << message << std::endl;
     }
 
@@ -261,6 +297,87 @@ namespace {
     protected:
         int mUmId = test_device_id();
     };
+
+    TEST_F(LibumTestUmpCpp, test_position_trigger_captures_expected_events_at_100um_per_second) {
+        const int speed = 100;
+        EXPECT_TRUE(mUmObj->open ()) << mUmObj->lastErrorText ();
+
+        const um_position_trigger_config config = {'x', SMCP1_ARG_UNDEF, 100, 51, 1};
+        EXPECT_TRUE(mUmObj->setPositionTrigger (&config, mUmId)) << mUmObj->lastErrorText ();
+        um_position_trigger_status before = {}, after = {};
+        EXPECT_TRUE(mUmObj->getPositionTrigger (&before, mUmId)) << mUmObj->lastErrorText ();
+        EXPECT_TRUE(mUmObj->takeStep (5.0f, 0, 0, 0, speed, mUmId)) << mUmObj->lastErrorText ();
+        sleep_ms (5000 / speed + 50);
+        EXPECT_TRUE(mUmObj->getPositionTrigger (&after, mUmId)) << mUmObj->lastErrorText ();
+
+        const uint32_t emitted = after.trigger_emitted_count - before.trigger_emitted_count;
+        const uint32_t dropped = after.dropped_trigger_count - before.dropped_trigger_count;
+        std::cout << "[position-trigger] speed=100 um/s, expected=50, emitted="
+                  << emitted << ", dropped=" << dropped << std::endl;
+        EXPECT_EQ(50u, emitted);
+        EXPECT_EQ(0u, dropped);
+
+        const um_position_trigger_config disabled = {'?', 0, 0, 0, 0};
+        EXPECT_TRUE(mUmObj->setPositionTrigger (&disabled, mUmId)) << mUmObj->lastErrorText ();
+    }
+
+    TEST_F(LibumTestUmpCpp, test_position_trigger_reports_dropped_events_at_2_5mm_per_second) {
+        const int speed = 2500;
+        EXPECT_TRUE(mUmObj->open ()) << mUmObj->lastErrorText ();
+
+        const um_position_trigger_config config = {'x', SMCP1_ARG_UNDEF, 100, 51, 1};
+        EXPECT_TRUE(mUmObj->setPositionTrigger (&config, mUmId)) << mUmObj->lastErrorText ();
+        um_position_trigger_status before = {}, after = {};
+        EXPECT_TRUE(mUmObj->getPositionTrigger (&before, mUmId)) << mUmObj->lastErrorText ();
+        EXPECT_TRUE(mUmObj->takeStep (-125.0f, 0, 0, 0, speed, mUmId)) << mUmObj->lastErrorText ();
+        sleep_ms (125000 / speed + 50);
+        EXPECT_TRUE(mUmObj->getPositionTrigger (&after, mUmId)) << mUmObj->lastErrorText ();
+
+        const uint32_t emitted = after.trigger_emitted_count - before.trigger_emitted_count;
+        const uint32_t dropped = after.dropped_trigger_count - before.dropped_trigger_count;
+        std::cout << "[position-trigger] speed=2500 um/s, nominal=1250, emitted="
+                  << emitted << ", dropped=" << dropped << std::endl;
+        EXPECT_GT(emitted, 0u);
+        EXPECT_GT(dropped, 0u);
+
+        const um_position_trigger_config disabled = {'?', 0, 0, 0, 0};
+        EXPECT_TRUE(mUmObj->setPositionTrigger (&disabled, mUmId)) << mUmObj->lastErrorText ();
+    }
+
+    TEST_F(LibumTestUmpCpp, test_position_trigger_config_status) {
+        ASSERT_TRUE(mUmObj->open ());
+
+        um_position_trigger_config config = {};
+        config.axis = 'X';
+        config.reference_position_nm = 10000;
+        config.spacing_nm = 1000;
+        config.duration_us = 100;
+        config.polarity = 1;
+        ASSERT_TRUE(mUmObj->setPositionTrigger (&config, mUmId))
+                << mUmObj->lastErrorText ();
+
+        um_position_trigger_status status = {};
+        const bool got_config = mUmObj->getPositionTrigger (&status, mUmId);
+        EXPECT_TRUE(got_config) << mUmObj->lastErrorText ();
+        if (got_config) {
+            EXPECT_EQ('x', status.config.axis);
+            EXPECT_EQ(config.reference_position_nm, status.config.reference_position_nm);
+            EXPECT_EQ(config.spacing_nm, status.config.spacing_nm);
+            EXPECT_EQ(config.duration_us, status.config.duration_us);
+            EXPECT_EQ(config.polarity, status.config.polarity);
+        }
+
+        config.axis = '?';
+        const bool disabled = mUmObj->setPositionTrigger (&config, mUmId);
+        EXPECT_TRUE(disabled) << mUmObj->lastErrorText ();
+        if (disabled) {
+            const bool got_disabled_status = mUmObj->getPositionTrigger (&status, mUmId);
+            EXPECT_TRUE(got_disabled_status) << mUmObj->lastErrorText ();
+            if (got_disabled_status) {
+                EXPECT_EQ('\0', status.config.axis);
+            }
+        }
+    }
 
     TEST_F(LibumTestUmpCpp, test_ping) {
         EXPECT_TRUE(mUmObj->open ());
@@ -726,11 +843,5 @@ namespace {
         // Verify restored drive order
         int restoredDriveOrder = mUmObj->getAxisDriveOrder (mUmId);
         EXPECT_EQ(currentDriveOrder, restoredDriveOrder);
-    }
-
-    // Main
-    int main(int argc, char **argv) {
-        ::testing::InitGoogleTest (&argc, argv);
-        return RUN_ALL_TESTS ();
     }
 }

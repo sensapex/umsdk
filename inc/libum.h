@@ -74,6 +74,7 @@ typedef struct sockaddr_in IPADDR;          /**< alias for sockaddr_in */
 #endif
 
 #include <math.h>
+#include <stdint.h>
 
 #define LIBUM_IPV4_ADDRESS_LENGTH 16      /**< Maximum length of an IPv4 address in text form, including NUL */
 
@@ -175,6 +176,40 @@ typedef struct um_positions_s
     float speed_d;         /**< D-actuator movement speed between last two position updates */
     unsigned long long updated_us; /**< Timestamp (in microseconds) when positions were updated */
 } um_positions;
+
+/**
+ * @brief Position-synchronous trigger configuration passed to SET.
+ *
+ * Set axis to 'x', 'y', 'z', or 'd' to select the trigger axis. Axis matching
+ * is case-insensitive; 'w' and '4' are also accepted as aliases for 'd'.
+ * Any other value disables the trigger. The firmware resolves
+ * #SMCP1_ARG_UNDEF to the current position when enabling the trigger.
+ *
+ * Positive durations below 52 us are clamped by firmware to 52 us. Output
+ * transitions are serviced at the position refresh cadence (about 51.28 us),
+ * so the actual pulse duration has that timing granularity.
+ */
+typedef struct um_position_trigger_config_s
+{
+    char axis;                        /**< 'x', 'y', 'z', or 'd' (case-insensitive); other values disable */
+    int32_t reference_position_nm;    /**< reference position, or #SMCP1_ARG_UNDEF */
+    int32_t spacing_nm;               /**< distance between trigger points */
+    int32_t duration_us;              /**< output duration; firmware clamps values below 52 us */
+    int polarity;                     /**< 0 active-low, 1 active-high */
+} um_position_trigger_config;
+
+/**
+ * @brief Position-synchronous trigger configuration and diagnostics returned by GET.
+ *
+ * Axis is '\0' when the trigger is disabled. The firmware does not report the
+ * instantaneous output level.
+ */
+typedef struct um_position_trigger_status_s
+{
+    um_position_trigger_config config;  /**< active configuration; axis is '\0' when disabled */
+    uint32_t trigger_emitted_count;     /**< number of emitted triggers, GET only */
+    uint32_t dropped_trigger_count;     /**< number of dropped triggers, GET only */
+} um_position_trigger_status;
 
 /**
  * @brief A device found during multi-interface discovery.
@@ -534,6 +569,33 @@ LIBUM_SHARED_EXPORT int um_read_version(um_state *hndl, const int dev,
  */
 
 LIBUM_SHARED_EXPORT int um_get_axis_count(um_state * hndl, const int dev);
+
+/**
+ * @brief Configure position-synchronous trigger output.
+ *
+ * @param   hndl     Pointer to session handle
+ * @param   dev      Device ID
+ * @param   config  Trigger configuration. Set axis to 'x', 'y', 'z', or 'd'
+ *                  (case-insensitive) to enable; any other value disables.
+ *                  The other configuration fields are used only when enabled.
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
+ */
+LIBUM_SHARED_EXPORT int um_set_position_trigger(um_state *hndl, const int dev,
+                                                const um_position_trigger_config *config);
+
+/**
+ * @brief Read position-synchronous trigger output status.
+ *
+ * @param   hndl     Pointer to session handle
+ * @param   dev      Device ID
+ * @param[out] status  Buffer populated with firmware configuration and counters.
+ *                     Axis is '\0' when the trigger is disabled.
+ *
+ * @return  Negative value if an error occurred. Zero or positive value otherwise.
+ */
+LIBUM_SHARED_EXPORT int um_get_position_trigger(um_state *hndl, const int dev,
+                                                um_position_trigger_status *status);
 
 /**
  * @brief Initialize uMp or uMs zero position
@@ -1782,6 +1844,30 @@ public:
      */
     int getAxisCount(const int dev = LIBUM_USE_LAST_DEV)
     {   return um_get_axis_count(_handle, getDev(dev)); }
+
+    /**
+     * @brief Configure position-synchronous trigger output.
+     *
+     * @param config  Trigger configuration
+     * @param dev     Device ID
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
+    bool setPositionTrigger(const um_position_trigger_config *config,
+                            const int dev = LIBUM_USE_LAST_DEV)
+    {   return um_set_position_trigger(_handle, getDev(dev), config) >= 0; }
+
+    /**
+     * @brief Read position-synchronous trigger output status.
+     *
+     * @param[out] status   Trigger configuration and diagnostics
+     * @param dev           Device ID
+     *
+     * @return `true` if operation was successful, `false` otherwise
+     */
+    bool getPositionTrigger(um_position_trigger_status *status,
+                            const int dev = LIBUM_USE_LAST_DEV)
+    {   return um_get_position_trigger(_handle, getDev(dev), status) >= 0; }
 
     /**
      * @brief Take a step (relative movement from current position)

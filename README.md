@@ -63,6 +63,10 @@ Precompiled Doxygen documentation can be found http://dist.sensapex.com/misc/um-
 
 ### Changelog
 
+#### Version 1.603
+
+- Add firmware-aligned position-synchronous trigger configuration and status APIs.
+
 #### Version 1.602
 
 - Add device discovery over multiple LinkLocal networks
